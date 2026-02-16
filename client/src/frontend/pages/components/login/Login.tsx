@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
-import "../../../../frontend/styles/login.css";
-import logo from "../../../../frontend/images/lg_cp360_white.png";
+import "/src/frontend/styles/login.css";
+import logo from "/src/frontend/images/lg_cp360_white.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Link } from "react-router-dom";
 
@@ -66,7 +66,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
             </button>
         
         </form>
-            <Link to="/register">Don't have an account? Register here</Link>
+            {/* <Link to="/register">Don't have an account? Register here</Link> */}
          </div> 
     </div>
   );

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import logo from "../../../../frontend/images/lg_cp360_white.png";
-import "../../../../frontend/styles/dashboard.css";
+import "/src/frontend/styles/dashboard.css";
+import logo from "/src/frontend/images/lg_cp360_white.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import Accounts from "../accounts/Accounts";
 
 interface DashboardProps {
   onLogout: () => void;
@@ -16,11 +17,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
   const [isContentsOpen, setIsContentsOpen] = useState(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState(false);
+
   const [activeView, setActiveView] = useState<
     | "dashboard"
     | "accounts"
     | "manageUsers"
-    | "manageTeams"
+    | "manageOrganizations"
     | "campaigns"
     | "createCampaign"
     | "screens"
@@ -33,6 +35,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     | "playlists"
     | "layouts"
     | "user"
+    | "addUser"
   >("dashboard");
 
   const handleLogout = () => onLogout();
@@ -270,23 +273,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         );
 
         case "accounts":
-        return (
-          <div className="accountsHome">
-            <div className="topRow">
-              <h1 className="pageTitle">Accounts</h1>
-              <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search account title or name"
-                />
-                <button className="addCampaignBtn">+ ADD AN ACCOUNT</button>
-              </div>
-            </div>
-            <div className="viewPage">
-              <h2>No accounts available yet.</h2>
-            </div>
-          </div>
-        );
+        return <Accounts activeTab="accounts" onNavigate={(view) => setActiveView(view)} />;
+
+        case "manageUsers":
+        return <Accounts activeTab="manageUsers" onNavigate={(view) => setActiveView(view)} />;
+        case "manageOrganizations":
+        return <Accounts activeTab="manageOrganizations" onNavigate={(view) => setActiveView(view)} />; 
+
+         
 
         case "layouts":
         return (
@@ -449,7 +443,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
              <i className="bi bi-grid-1x2"></i> <span className="userSize">LAYOUTS</span>
           </button> 
           <button
-            className={`navItem ${activeView === "accounts" || activeView === "manageUsers" || activeView === "manageTeams" ? "active" : ""}`}
+            className={`navItem ${activeView === "accounts" || activeView === "manageUsers" || activeView === "manageOrganizations" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
               setIsContentsOpen(false);
@@ -458,6 +452,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             }}
           >
             <i className="bi bi-person-rolodex"></i> <span className="userSize">ACCOUNTS</span>
+            
           </button>
 
           {isAccountsOpen && (
@@ -475,10 +470,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           {isAccountsOpen && (
             <div className="submenu">
               <button
-                className={`submenuItem ${activeView === "manageTeams" ? "active" : ""}`}
-                onClick={() => setActiveView("manageTeams")}
+                className={`submenuItem ${activeView === "manageOrganizations" ? "active" : ""}`}
+                onClick={() => setActiveView("manageOrganizations")}
               >
-                Manage Teams
+                Manage Organizations
               </button>
             </div>
           )} 
