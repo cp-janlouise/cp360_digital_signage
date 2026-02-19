@@ -15,6 +15,7 @@ export type MediaItem = {
 type Props = {
   initialTab?: ContentTab;
   initialItems?: MediaItem[];
+  onNavigate?: (view: "dashboard" | "accounts") => void;
 };
 
 function makeId() {
@@ -45,7 +46,8 @@ const DEFAULT_ITEMS: MediaItem[] = [
   },
 ];
 
-const Contents: React.FC<Props> = ({ initialTab = "all", initialItems }) => {
+const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigate }) => {
+
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(
     initialItems ?? DEFAULT_ITEMS
   );
@@ -185,7 +187,16 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems }) => {
 
   return (
     <div className="contents">
-      <div className="contentsTop">
+      <div className="topRow">
+        {onNavigate && (
+          <button className="homeButton" onClick={() => onNavigate("dashboard")}>
+            Home
+          </button>
+        )}
+        <h1 className="accountsPageTitle">Contents</h1>
+      </div>
+        <div className="contentsTop">
+    
         <div className="contentsTitleWrap">
           <h1 className="contentsTitle">{tabLabel}</h1>
           <div className="contentsSubtitle">

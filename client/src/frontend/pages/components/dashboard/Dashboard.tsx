@@ -180,8 +180,10 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
             </div>
           </div>
         );
-      case "contents":
-         return  (<Contents initialTab="all" />);
+
+        case "contents":
+        return <Contents initialTab="all" onNavigate={(view) => setActiveView(view as any)} />;
+
 
         case "accounts":
         return <Accounts activeTab="accounts" onNavigate={(view) => setActiveView(view)} />;
