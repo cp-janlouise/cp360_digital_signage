@@ -1,0 +1,254 @@
+.contents {
+  width: 100%;
+}
+
+.contentsTop {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.contentsTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contentsTitle {
+  margin: 0;
+  font-size: 26px;
+}
+
+.contentsSubtitle {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.contentsActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contentsSearch {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  min-width: 260px;
+  outline: none;
+}
+
+.contentsTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 16px 12px 16px;
+}
+
+.tabBtn {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #e5e5e5;
+  background: white;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tabBtnActive {
+  border-color: #1f2a44;
+  background: #1f2a44;
+  color: white;
+}
+
+.contentsBody {
+  padding: 16px;
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.emptyState {
+  border: 1px dashed #d8d8d8;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.emptyTitle {
+  margin: 0;
+}
+
+.emptyText {
+  margin-top: 10px;
+}
+
+.mediaCard {
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 12px;
+  background: white;
+}
+
+.mediaCardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.mediaCardTitle {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaType {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 6px;
+}
+
+.mediaPreviewWrap {
+  margin-top: 10px;
+}
+
+.imgPreview,
+.vidPreview {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
+}
+
+.audioPreview {
+  width: 100%;
+}
+
+.linkPreview {
+  word-break: break-word;
+}
+
+/* Buttons */
+.btnPrimary {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #1f2a44;
+  background: #1f2a44;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btnGhost {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  background: white;
+  cursor: pointer;
+}
+
+.btnIcon {
+  border: 1px solid #e5e5e5;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  z-index: 9999;
+}
+
+.modalCard {
+  width: min(560px, 100%);
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.modalTitle {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.formLabel {
+  display: grid;
+  gap: 6px;
+}
+
+.labelText {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.input,
+.select {
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  padding: 0 12px;
+  outline: none;
+}
+
+.select {
+  padding: 0 10px;
+}
+
+.hiddenFile {
+  display: none;
+}
+
+.fileRow {
+  display: grid;
+  gap: 6px;
+}
+
+.filePicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fileName {
+  font-size: 13px;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileMeta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.modalActions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

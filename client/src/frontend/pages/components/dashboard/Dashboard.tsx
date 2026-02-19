@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, {  useState } from "react";
 import "/src/frontend/styles/dashboard.css";
+import "/src/frontend/styles/accounts.css";
+import "/src/frontend/styles/contents.css";
 import logo from "/src/frontend/images/lg_cp360_white.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FullCalendar from "@fullcalendar/react";
@@ -8,15 +10,22 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Accounts from "../accounts/Accounts";
+import Contents from "../contents/Contents";
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+type Props = {
+  activeTab: "dashboard" | "campaigns" | "contents" | "screens" | "playlists" | "accounts";
+  onNavigate: (view: "dashboard" | "campaigns" | "contents" | "screens" | "playlists" | "accounts") => void;
+};
+
+
+const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) => {
   const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
-  const [isContentsOpen, setIsContentsOpen] = useState(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState(false);
+
 
   const [activeView, setActiveView] = useState<
     | "dashboard"
@@ -27,17 +36,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     | "createCampaign"
     | "screens"
     | "contents"
-    | "allMedia"
-    | "images"
-    | "videos"
-    | "websiteUrl"
-    | "music"
     | "playlists"
     | "layouts"
     | "user"
     | "addUser"
   >("dashboard");
 
+ const isHome = activeView === "dashboard";
   const handleLogout = () => onLogout();
 
   const renderMain = () => {
@@ -56,26 +61,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             </div>
 
             <div className="summaryCards">
-              <div className="card">
+              <button className="card" onClick={() => setActiveView("campaigns")}>
                 <div className="cardTitle">CAMPAIGNS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Campaigns</div>
-              </div>
-              <div className="card">
+              </button>
+              <button className="card" onClick={() => setActiveView("contents")}>
                 <div className="cardTitle">CONTENTS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Contents</div>
-              </div>
-              <div className="card">
+              </button>
+              <button className="card" onClick={() => setActiveView("screens")}>
                 <div className="cardTitle">SCREENS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Screens</div>
-              </div>
-              <div className="card">
+              </button>
+              <button className="card" onClick={() => setActiveView("playlists")}>
                 <div className="cardTitle">PLAYLISTS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Playlists</div>
-              </div>
+              </button>
             </div>
 
       <div className="calendarSection">
@@ -108,7 +113,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         return (
           <div className="CampaignsHome">
             <div className="topRow">
-              <h1 className="pageTitle">Campaigns</h1>
+              {!isHome && (
+                <button
+                  className="homeButton"
+                  onClick={() => {
+                    setIsCampaignsOpen(false);
+                    setIsAccountsOpen(false);
+                    setActiveView("dashboard");
+                    onNavigate("dashboard");
+                  }}
+                >
+                  HOME
+                </button>
+               )}
+              <h1 className="campaignsTitle">Campaigns</h1>
+               
+
               <div className="topActions">
                 <input
                   className="searchInput"
@@ -134,7 +154,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         return (
           <div className="ScreensHome">
             <div className="topRow">
-              <h1 className="pageTitle">Screens</h1>
+                {!isHome && (
+                <button
+                  className="homeButton"
+                  onClick={() => {
+                    setIsCampaignsOpen(false);
+                    setIsAccountsOpen(false);
+                    setActiveView("dashboard");
+                    onNavigate("dashboard");
+                  }}
+                >
+                  HOME
+                </button> )}
+              <h1 className="screensTitle">Screens</h1>
               <div className="topActions">
                 <input
                   className="searchInput"
@@ -149,128 +181,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
         );
       case "contents":
-        return (
-          <div className="ContentsHome">
-            <div className="topRow">
-              <h1 className="pageTitle">Contents</h1>
-              <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search content title or name"
-                />
-                <button className="addCampaignBtn">+ ADD A CONTENT</button>
-              </div>
-            </div>
-            <div className="viewPage">
-              <h2>No contents available yet.</h2>
-            </div>
-          </div>
-        );
-
-        case "allMedia":
-        return (
-          <div className="content">
-            <div className="viewPage">
-              <div className="topRow">
-                <h1 className="pageTitle">All Media</h1>
-                <div className="topActions">
-                  <input
-                    className="searchInput"
-                    placeholder="Search media title or name"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case "images":
-        return (
-          <div className="content">
-            <div className="viewPage">
-              <div className="topRow">
-                <h1 className="pageTitle">Content</h1>
-                <div className="topActions">
-                  <input
-                    className="searchInput"
-                    placeholder="Search image title or name"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="imagesContent"> IMAGES</div>
-          </div>
-        );
-
-      case "videos":
-        return (
-          <div className="content">
-            <div className="viewPage">
-              <div className="topRow">
-                <h1 className="pageTitle">Content</h1>
-                <div className="topActions">
-                  <input
-                    className="searchInput"
-                    placeholder="Search video title or name"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="videosContent"> VIDEOS</div>
-          </div>
-        );
-      case "websiteUrl":
-        return (
-          <div className="content">
-            <div className="viewPage">
-              <div className="topRow">
-                <h1 className="pageTitle">Content</h1>
-                <div className="topActions">
-                  <input
-                    className="searchInput"
-                    placeholder="Search website URL title or name"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="websiteUrlContent"> WEBSITE URLS</div>
-          </div>
-        );
-      case "music":
-        return (
-          <div className="content">
-            <div className="viewPage">
-              <div className="topRow">
-                <h1 className="pageTitle">Content</h1>
-                <div className="topActions">
-                  <input
-                    className="searchInput"
-                    placeholder="Search music title or name"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="musicContent"> MUSIC</div>
-          </div>
-        );
-
-      case "playlists":
-        return (
-          <div className="PlaylistsHome">
-            <div className="topRow">
-              <h1 className="pageTitle">Playlists</h1>
-              <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search playlist title or name"
-                />
-                <button className="addCampaignBtn">+ ADD A PLAYLIST</button>
-              </div>
-            </div>
-            <div className="viewPage">
-              <h2>No playlists available yet.</h2>
-            </div>
-          </div>
-        );
+         return  (<Contents initialTab="all" />);
 
         case "accounts":
         return <Accounts activeTab="accounts" onNavigate={(view) => setActiveView(view)} />;
@@ -286,7 +197,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         return (
           <div className="LayoutsHome">
             <div className="topRow">
-              <h1 className="pageTitle">Layouts</h1>
+              {!isHome && (
+                <button
+                  className="homeButton"
+                  onClick={() => {
+                    setIsCampaignsOpen(false);
+                    setIsAccountsOpen(false);
+                    setActiveView("dashboard");
+                    onNavigate("dashboard");
+                  }}
+                >
+                  HOME
+                </button> )}
+              <h1 className="layoutsTitle">Layouts</h1>
               <div className="topActions">
                 <input
                   className="searchInput"
@@ -327,7 +250,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             className={`navItem ${activeView === "dashboard" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen(false);
               setIsAccountsOpen(false);
               setActiveView("dashboard");
             }}
@@ -339,7 +261,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             className={`navItem ${activeView === "campaigns" || activeView === "createCampaign" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen((s) => !s);
-              setIsContentsOpen(false);
               setIsAccountsOpen(false);
               setActiveView("campaigns");
             }}
@@ -362,7 +283,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             className={`navItem ${activeView === "screens" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen(false);
               setIsAccountsOpen(false);
               setActiveView("screens");
             }}
@@ -372,10 +292,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </button>
 
           <button
-            className={`navItem ${activeView === "contents" || activeView === "images" || activeView === "videos" || activeView === "websiteUrl" || activeView === "music" ? "active" : ""}`}
+            className={`navItem ${activeView === "contents" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen((s) => !s);
               setIsAccountsOpen(false);
               setActiveView("contents");
             }}
@@ -383,47 +302,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             <i className="bi bi-file-earmark"></i> <span className="userSize">CONTENTS</span>
           </button>
 
-          {isContentsOpen && (
-            <div className="submenu">
-              <button
-                className={`submenuItem ${activeView === "allMedia" ? "active" : ""}`}
-                onClick={() => setActiveView("allMedia")}
-              >
-            <i className="bi bi-collection"></i> <span>ALL MEDIA</span>
-              </button>
-              <button
-                className={`submenuItem ${activeView === "images" ? "active" : ""}`}
-                onClick={() => setActiveView("images")}
-              >
-            <i className="bi bi-file-earmark-image"></i> <span>IMAGES</span>
-
-              </button>
-              <button
-                className={`submenuItem ${activeView === "videos" ? "active" : ""}`}
-                onClick={() => setActiveView("videos")}
-              >
-              <i className="bi bi-file-earmark-play"></i> <span>VIDEOS</span>
-              </button>
-              <button
-                className={`submenuItem ${activeView === "websiteUrl" ? "active" : ""}`}
-                onClick={() => setActiveView("websiteUrl")}
-              >
-              <i className="bi bi-globe"></i> <span>WEBSITE URL</span>
-              </button>
-              <button
-                className={`submenuItem ${activeView === "music" ? "active" : ""}`}
-                onClick={() => setActiveView("music")}
-              >
-              <i className="bi bi-file-earmark-music"></i> <span>MUSIC</span>
-              </button>
-            </div>
-          )}
-
           <button
             className={`navItem ${activeView === "playlists" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen(false);
               setIsAccountsOpen(false);
               setActiveView("playlists");
             }}
@@ -435,7 +317,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             className={`navItem ${activeView === "layouts" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen(false);
               setIsAccountsOpen(false);
               setActiveView("layouts");
             }}
@@ -446,7 +327,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             className={`navItem ${activeView === "accounts" || activeView === "manageUsers" || activeView === "manageOrganizations" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen(false);
               setIsAccountsOpen((s) => !s);
               setActiveView("accounts");
             }}
@@ -483,7 +363,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             className={`navItem ${activeView === "user" ? "active" : ""}` }
             onClick={() => {
               setIsCampaignsOpen(false);
-              setIsContentsOpen(false);
               setIsAccountsOpen(false);
               setActiveView("user");
             }}

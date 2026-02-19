@@ -12,7 +12,7 @@ type UserItem = {
 
 type Props = {
   activeTab: "manageUsers" | "manageOrganizations" | "accounts";
-  onNavigate: (view: "accounts" | "manageUsers" | "manageOrganizations") => void;
+  onNavigate: (view: "dashboard" | "accounts" | "manageUsers" | "manageOrganizations") => void;
 };
 
 const Accounts: React.FC<Props> = ({ activeTab, onNavigate }) => {
@@ -77,8 +77,11 @@ const Accounts: React.FC<Props> = ({ activeTab, onNavigate }) => {
   return (
     <div className="accountsHome">
       <div className="topRow">
-         {!isHome && (
-          <button className="backBtn" onClick={() => onNavigate("accounts")} >Back</button> )}
+         {!isHome ? (
+           <button className="backBtn" onClick={() => onNavigate("accounts")}>Back</button>
+         ) : (
+           <button className="homeButton" onClick={() => onNavigate("dashboard")}>Home</button>
+         )}
         <h1 className="accountsPageTitle">Accounts</h1>
       </div>
         {isHome && (
@@ -217,8 +220,24 @@ const Accounts: React.FC<Props> = ({ activeTab, onNavigate }) => {
     }
 
       {activeTab === "manageOrganizations" && (
+        <div className="ManageUsersHome">
+          <div className="topRow">
+            <h1 className="manageUserTitle">Manage Organizations</h1>
+            <div className="topActions">
+              <input
+                className="searchInput"
+                placeholder="Search organization title or name"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
+                 <button className="addUserBtn" onClick={openAddUserModal}>
+                + ADD AN ORGANIZATION
+              </button>
+            </div>
+          </div>
         <div className="viewPage">
           <h2>No organizations yet.</h2>
+        </div>
         </div>
       )}
     </div>
