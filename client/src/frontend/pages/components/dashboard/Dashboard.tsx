@@ -16,7 +16,6 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import Accounts from "../accounts/Accounts";
 import Contents, { type MediaItem as ContentsMediaItem } from "../contents/Contents";
 import Layouts, { type Layout, type MediaItem } from "../layouts/Layouts";
-import Stage from "../layouts/Stage";
 
 interface DashboardProps {
   onLogout: () => void;
@@ -41,8 +40,6 @@ type Props = {
 const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) => {
   const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState(false);
-
-  // Layout system
   const [activeLayout, setActiveLayout] = useState<Layout | null>(null);
   const [allMedia, setAllMedia] = useState<MediaItem[]>([]);
 
@@ -112,18 +109,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
               </button>
             </div>
 
-            {/* ✅ Step 6: render the replaceable cards preview here */}
-            <div style={{ marginTop: 18 }}>
-              <h2 style={{ marginBottom: 10 }}>Active Layout Preview</h2>
-
-              <div className="middleArea" style={{ height: 420 }}>
-                {activeLayout ? (
-                  <Stage layout={activeLayout} mediaLibrary={allMedia} />
-                ) : (
-                  <div style={{ padding: 16 }}>No active layout selected.</div>
-                )}
-              </div>
-            </div>
+            
 
             <div className="calendarSection">
               <h2 className="calendarTitle">Schedules:</h2>

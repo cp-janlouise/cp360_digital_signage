@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "/src/frontend/styles/layouts.css";
+import TopBar from "./TopBar";
+import Ticker from "./Ticker";
 
 /** Keep types compatible with Contents.tsx */
 export type MediaType = "image" | "video" | "website" | "music";
@@ -24,6 +26,9 @@ export type Layout = {
   id: string;
   name: string;
   slots: Record<SlotId, SlotContent>;
+  // Optional editor metadata: the visual order of slots and per-slot sizes (percentages)
+  slotOrder?: SlotId[];
+  slotSizes?: Record<SlotId, { width: number; height: number }>;
   createdAt: string;
   updatedAt: string;
 };
@@ -71,8 +76,30 @@ function loadLayouts(): Layout[] {
 }
 
 function saveLayouts(layouts: Layout[]) {
-  localStorage.setItem(LS_KEY, JSON.stringify(layouts));
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(layouts));
+  } catch {
+    // ignore
+  }
 }
+
+function getMedia(media: MediaItem[], id?: string) {
+  if (!id) return null;
+  return media.find((m) => m.id === id) ?? null;
+}
+
+function labelFor(content: SlotContent, media: MediaItem[]) {
+  if (content.kind === "empty") return "Empty";
+  if (content.kind === "widget") return `Widget: ${content.widget}`;
+  const m = getMedia(media, content.mediaId);
+  return m ? `Media: ${m.title}` : "Media: (missing)";
+}
+
+const SLOT_META: Record<SlotId, { title: string; subtitle: string }> = {
+  hero: { title: "Hero", subtitle: "Big left" },
+  rightTop: { title: "Right Top", subtitle: "Top right" },
+  rightBottom: { title: "Right Bottom", subtitle: "Bottom right" },
+};
 
 const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome }) => {
   const [layouts, setLayouts] = useState<Layout[]>([]);
@@ -82,15 +109,26 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
   const [showEditor, setShowEditor] = useState(false);
   const [draft, setDraft] = useState<Layout | null>(null);
 
+  // Editor state
+  const [activeSlot, setActiveSlot] = useState<SlotId>("hero");
+  const [dragFrom, setDragFrom] = useState<SlotId | null>(null);
+
+  // Media picker state
+  const [mediaTab, setMediaTab] = useState<"all" | MediaType>("all");
+  const [mediaSearch, setMediaSearch] = useState("");
+  const [pickerSlot, setPickerSlot] = useState<SlotId | null>(null);
+
   useEffect(() => {
-    setLayouts(loadLayouts());
+    const loaded = loadLayouts();
+    setLayouts(loaded);
+    if (loaded.length) setSelectedId(loaded[0].id);
   }, []);
 
   useEffect(() => {
     saveLayouts(layouts);
   }, [layouts]);
 
-  const filtered = useMemo(() => {
+  const filteredLayouts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return layouts;
     return layouts.filter((l) => l.name.toLowerCase().includes(q));
@@ -103,17 +141,26 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
 
   const openCreate = () => {
     setDraft(defaultLayout());
+    setActiveSlot("hero");
+    setMediaTab("all");
+    setMediaSearch("");
     setShowEditor(true);
   };
 
   const openEdit = (layout: Layout) => {
-    setDraft(JSON.parse(JSON.stringify(layout)));
+    // Deep copy to avoid mutating saved layout while editing
+    const copy = JSON.parse(JSON.stringify(layout)) as Layout;
+    setDraft(copy);
+    setActiveSlot("hero");
+    setMediaTab("all");
+    setMediaSearch("");
     setShowEditor(true);
   };
 
   const closeEditor = () => {
     setShowEditor(false);
     setDraft(null);
+    setDragFrom(null);
   };
 
   const saveDraft = () => {
@@ -141,6 +188,56 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
     if (selectedId === id) setSelectedId(null);
   };
 
+  const updateSlot = (slot: SlotId, next: SlotContent) => {
+    if (!draft) return;
+    setDraft({
+      ...draft,
+      slots: {
+        ...draft.slots,
+        [slot]: next,
+      },
+    });
+  };
+
+  const swapSlotContents = (a: SlotId, b: SlotId) => {
+    if (!draft) return;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const nextSlots = { ...prev.slots };
+      const temp = nextSlots[a];
+      nextSlots[a] = nextSlots[b];
+      nextSlots[b] = temp;
+      return { ...prev, slots: nextSlots };
+    });
+  };
+
+  const quickSwapHeroRight = () => {
+    // If you want hero content to appear on the right, swap hero with rightTop.
+    // You can also swap with rightBottom. Up to you.
+    swapSlotContents("hero", "rightTop");
+    setActiveSlot("rightTop");
+  };
+
+  const clearSlot = (slot: SlotId) => updateSlot(slot, { kind: "empty" });
+
+  const activeContent = draft?.slots[activeSlot] ?? { kind: "empty" as const };
+
+  const filteredMedia = useMemo(() => {
+    const q = mediaSearch.trim().toLowerCase();
+    let base = mediaLibrary;
+
+    if (mediaTab !== "all") base = base.filter((m) => m.type === mediaTab);
+    if (!q) return base;
+
+    return base.filter((m) => {
+      return (
+        m.title.toLowerCase().includes(q) ||
+        m.type.toLowerCase().includes(q) ||
+        m.src.toLowerCase().includes(q)
+      );
+    });
+  }, [mediaLibrary, mediaTab, mediaSearch]);
+
   return (
     <div className="layoutsPage">
       <div className="layoutsHeader">
@@ -148,10 +245,11 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
           <button className="btnGhost" onClick={onNavigateHome}>
             HOME
           </button>
+
           <div>
             <div className="layoutsH1">Layouts</div>
             <div className="layoutsSub">
-              Layouts only replace the middle cards (top bar + ticker are constant).
+              Tip: drag a slot onto another to swap what they display. Your Hero can “teleport” right. ✨
             </div>
           </div>
         </div>
@@ -163,7 +261,7 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search layouts..."
           />
-          <button className="addLayout" onClick={openCreate}>
+          <button className="btnPrimary" onClick={openCreate}>
             + ADD A LAYOUT
           </button>
         </div>
@@ -173,14 +271,14 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
         <div className="panel">
           <div className="panelTitle">Saved Layouts ({layouts.length})</div>
 
-          {filtered.length === 0 ? (
+          {filteredLayouts.length === 0 ? (
             <div className="emptyBox">
               <div className="emptyTitle">No layouts</div>
-              <div className="emptyText">Create one and assign what each card displays.</div>
+              <div className="emptyText">Create one and assign what each slot displays.</div>
             </div>
           ) : (
             <div className="layoutList">
-              {filtered.map((l) => (
+              {filteredLayouts.map((l) => (
                 <button
                   key={l.id}
                   className={l.id === selectedId ? "layoutRow layoutRowActive" : "layoutRow"}
@@ -190,15 +288,13 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
                     <div className="layoutName" title={l.name}>
                       {l.name}
                     </div>
-                    <div className="layoutMeta">
-                      {new Date(l.updatedAt).toLocaleString()}
-                    </div>
+                    <div className="layoutMeta">{new Date(l.updatedAt).toLocaleString()}</div>
                   </div>
 
-                  <div className="layoutRowActions">
-                    <span className="pill">Hero</span>
-                    <span className="pill">RightTop</span>
-                    <span className="pill">RightBottom</span>
+                  <div className="layoutRowChips">
+                    <span className="chip">Hero</span>
+                    <span className="chip">Right Top</span>
+                    <span className="chip">Right Bottom</span>
                   </div>
                 </button>
               ))}
@@ -236,7 +332,7 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
 
       {showEditor && draft && (
         <div className="modalOverlay" onClick={closeEditor}>
-          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+          <div className="modalCard editorModal" onClick={(e) => e.stopPropagation()}>
             <div className="modalTitle">Layout Editor</div>
 
             <label className="field">
@@ -249,47 +345,169 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
             </label>
 
             <div className="editorHint">
-              Pick what each card slot should display (media or widget).
+              Top bar and ticker are shown as in the real stage. Edit the content area (drag slots, resize frames, assign media).
             </div>
 
-            <div className="slotEditorGrid">
-              <SlotEditor
-                slotId="hero"
-                title="Hero (Big Left)"
-                value={draft.slots.hero}
-                media={mediaLibrary}
-                onChange={(next) =>
-                  setDraft({ ...draft, slots: { ...draft.slots, hero: next } })
-                }
-              />
+            <div className="editorFrameWithSidebar">
+              {/* Left sidebar: slot controls only (media library removed as requested) */}
+              <aside className="editorSidebar">
+                <div className="sidebarSection">
+                  <div className="sidebarTitle">Slots</div>
+                  {(draft.slotOrder || ["hero", "rightTop", "rightBottom"]).map((slotId) => (
+                    <div id={`slot-editor-${slotId}`} key={slotId} className="slotEditorCompact">
+                      <div className="slotEditorHeader">{SLOT_META[slotId].title}</div>
 
-              <SlotEditor
-                slotId="rightTop"
-                title="Right Top"
-                value={draft.slots.rightTop}
-                media={mediaLibrary}
-                onChange={(next) =>
-                  setDraft({ ...draft, slots: { ...draft.slots, rightTop: next } })
-                }
-              />
+                      <div className="slotEditorBody">
+                        <div className="slotLabel">{labelFor(draft.slots[slotId], mediaLibrary)}</div>
 
-              <SlotEditor
-                slotId="rightBottom"
-                title="Right Bottom"
-                value={draft.slots.rightBottom}
-                media={mediaLibrary}
-                onChange={(next) =>
-                  setDraft({ ...draft, slots: { ...draft.slots, rightBottom: next } })
-                }
-                allowScorecard
-              />
+                        <div className="slotActions">
+                          <button
+                            className="btnGhost"
+                            onClick={() =>
+                              setDraft({ ...draft, slots: { ...draft.slots, [slotId]: { kind: "empty" } } })
+                            }
+                          >
+                            Clear
+                          </button>
+                          <button
+                            className="btnGhost"
+                            onClick={() => {
+                              const el = document.querySelector(`.canvasSlot[data-slot="${slotId}"]`);
+                              if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+                            }}
+                          >
+                            Focus
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </aside>
+
+              {/* Editor main area: TopBar (fixed), Canvas (droppable, scrollable), Ticker (fixed) */}
+              <div className="editorMain">
+                <div className="editorTopbarWrap">
+                  <TopBar />
+                </div>
+
+                <div
+                  className="editorCanvasArea"
+                  role="region"
+                  aria-label="Layout canvas"
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  {(draft.slotOrder || ["hero", "rightTop", "rightBottom"]).map((slotId) => {
+                    const content = draft.slots[slotId];
+                    return (
+                      <div
+                        key={slotId}
+                        data-slot={slotId}
+                        className="canvasSlot"
+                        onClick={() => setPickerSlot(slotId)} // open file picker for this slot
+                        onDoubleClick={() => {
+                          const el = document.getElementById(`slot-editor-${slotId}`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                      >
+                        <div className="canvasSlotHeader">{SLOT_META[slotId].title}</div>
+                        <div className="canvasSlotBody">
+                          {content.kind === "media" ? (
+                            <img
+                              src={getMedia(mediaLibrary, (content as any).mediaId)?.src}
+                              alt={getMedia(mediaLibrary, (content as any).mediaId)?.title ?? ""}
+                              style={{ maxWidth: "100%", maxHeight: "100%" }}
+                            />
+                          ) : (
+                            <div className="canvasEmpty">Empty slot — click to choose media</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Inline picker modal (uses uploaded Content list) */}
+                  {pickerSlot && (
+                    <div
+                      className="inlinePickerOverlay"
+                      role="dialog"
+                      aria-label="Choose media"
+                      onClick={() => setPickerSlot(null)}
+                      style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 12000,
+                      }}
+                    >
+                      <div
+                        className="inlinePickerCard"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: "80%",
+                          maxWidth: 900,
+                          maxHeight: "70vh",
+                          background: "#fff",
+                          borderRadius: 8,
+                          padding: 12,
+                          overflow: "auto",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <div style={{ fontWeight: 700 }}>Choose media for {pickerSlot}</div>
+                          <div>
+                            <input
+                              placeholder="Search media..."
+                              value={mediaSearch}
+                              onChange={(e) => setMediaSearch(e.target.value)}
+                              style={{ marginRight: 8 }}
+                            />
+                            <button className="btnGhost" onClick={() => setPickerSlot(null)}>Close</button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 12 }}>
+                          {filteredMedia.map((m) => (
+                            <div key={m.id} className="pickerItem" style={{ border: "1px solid #eee", borderRadius: 6, padding: 8, cursor: "pointer" }}
+                              onClick={() => {
+                                setDraft({ ...draft!, slots: { ...draft!.slots, [pickerSlot]: { kind: "media", mediaId: m.id } } });
+                                setPickerSlot(null);
+                              }}
+                            >
+                              {m.type === "image" ? (
+                                <img src={m.src} alt={m.title} style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 4 }} />
+                              ) : (
+                                <div style={{ width: "100%", height: 90, display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa", borderRadius: 4 }}>
+                                  {m.type}
+                                </div>
+                              )}
+                              <div style={{ marginTop: 8, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.title}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="editorTickerWrap">
+                  <Ticker />
+                </div>
+              </div>
             </div>
 
-            <div className="modalActions">
+            <div className="modalActions" style={{ marginTop: 12 }}>
               <button className="btnGhost" onClick={closeEditor}>
                 Cancel
               </button>
-              <button className="btnPrimary" onClick={saveDraft}>
+              <button
+                className="btnPrimary"
+                onClick={() => {
+                  saveDraft();
+                }}
+              >
                 Save Layout
               </button>
             </div>
@@ -321,30 +539,25 @@ function PreviewCard({
   media: MediaItem[];
   big?: boolean;
 }) {
-  const label = renderLabel(content, media);
-
   return (
     <div className={big ? "pCard pCardBig" : "pCard"}>
       <div className="pCardTop">
         <div className="pCardTitle">{title}</div>
-        <div className="pCardLabel">{label}</div>
+        <div className="pCardLabel">{labelFor(content, media)}</div>
       </div>
 
       <div className="pCardBody">
-        {content.kind === "media" ? (
-          <Thumb mediaId={content.mediaId} media={media} />
-        ) : content.kind === "widget" ? (
-          <div className="thumbPlaceholder">Widget: {content.widget}</div>
-        ) : (
-          <div className="thumbPlaceholder">Empty</div>
-        )}
+        <MiniPreview content={content} media={media} />
       </div>
     </div>
   );
 }
 
-function Thumb({ mediaId, media }: { mediaId: string; media: MediaItem[] }) {
-  const m = media.find((x) => x.id === mediaId);
+function MiniPreview({ content, media }: { content: SlotContent; media: MediaItem[] }) {
+  if (content.kind === "empty") return <div className="thumbPlaceholder">Empty</div>;
+  if (content.kind === "widget") return <div className="thumbPlaceholder">Widget: {content.widget}</div>;
+
+  const m = getMedia(media, content.mediaId);
   if (!m) return <div className="thumbPlaceholder">Missing media</div>;
 
   if (m.type === "image") return <img className="thumbImg" src={m.src} alt={m.title} />;
@@ -353,87 +566,14 @@ function Thumb({ mediaId, media }: { mediaId: string; media: MediaItem[] }) {
   return <div className="thumbPlaceholder">{m.type.toUpperCase()}: {m.title}</div>;
 }
 
-function SlotEditor({
-  slotId,
-  title,
-  value,
-  media,
-  onChange,
-  allowScorecard,
-}: {
-  slotId: SlotId;
-  title: string;
-  value: SlotContent;
-  media: MediaItem[];
-  onChange: (next: SlotContent) => void;
-  allowScorecard?: boolean;
-}) {
+function MediaThumb({ media }: { media: MediaItem }) {
+  if (media.type === "image") return <img className="mediaThumb" src={media.src} alt={media.title} />;
+  if (media.type === "video") return <video className="mediaThumb" src={media.src} muted playsInline />;
   return (
-    <div className="slotBox">
-      <div className="slotTop">
-        <div>
-          <div className="slotTitle">{title}</div>
-          <div className="slotSub">{slotId}</div>
-        </div>
-        <div className="slotValue">{renderLabel(value, media)}</div>
-      </div>
-
-      <div className="slotControls">
-        <button className="btnMini" onClick={() => onChange({ kind: "empty" })}>
-          Clear
-        </button>
-
-        <select
-          className="select"
-          value={
-            value.kind === "media"
-              ? `media:${value.mediaId}`
-              : value.kind === "widget"
-              ? `widget:${value.widget}`
-              : "empty"
-          }
-          onChange={(e) => {
-            const v = e.target.value;
-
-            if (v === "empty") return onChange({ kind: "empty" });
-
-            if (v.startsWith("media:")) {
-              return onChange({ kind: "media", mediaId: v.replace("media:", "") });
-            }
-
-            if (v.startsWith("widget:")) {
-              return onChange({
-                kind: "widget",
-                widget: v.replace("widget:", "") as WidgetKey,
-              });
-            }
-          }}
-        >
-          <option value="empty">Empty</option>
-
-          <optgroup label="Media">
-            {media.map((m) => (
-              <option key={m.id} value={`media:${m.id}`}>
-                {m.title} ({m.type})
-              </option>
-            ))}
-          </optgroup>
-
-          <optgroup label="Widgets">
-            {allowScorecard && <option value="widget:scorecard">Scorecard</option>}
-            <option value="widget:placeholder">Placeholder</option>
-          </optgroup>
-        </select>
-      </div>
+    <div className="mediaThumbText">
+      <div className="mediaThumbType">{media.type.toUpperCase()}</div>
     </div>
   );
-}
-
-function renderLabel(content: SlotContent, media: MediaItem[]) {
-  if (content.kind === "empty") return "Empty";
-  if (content.kind === "widget") return `Widget: ${content.widget}`;
-  const m = media.find((x) => x.id === content.mediaId);
-  return m ? `Media: ${m.title}` : "Media: (missing)";
 }
 
 export default Layouts;

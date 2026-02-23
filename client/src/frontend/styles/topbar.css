@@ -1,0 +1,221 @@
+/* =========================
+   TOP BAR STYLES
+   ========================= */
+
+.top-bar {
+  height: 8.5vh;
+  min-height: 70px;
+
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.3fr;
+  align-items: center;
+
+  padding: 0.3vh 0.4vw;
+  margin-bottom: 0.4vw;
+  gap: 1.2vw;
+}
+
+.logo img {
+  height: 10.5vh;
+  max-height: 115px;
+  object-fit: contain;
+}
+
+/* =========================
+   SAFETY COUNTER
+   ========================= */
+
+.safety-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.safety-chip {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 14px;
+  padding: 4px 8px;
+  border: 3px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 3px 6px;
+  align-items: center;
+
+  min-width: 0;
+}
+
+.safety-chip-top {
+  grid-column: 1 / 2;
+  grid-row: 1 / 3;
+}
+
+.safety-chip-title {
+  font-weight: 950;
+  letter-spacing: 0.4px;
+  font-size: clamp(12px, 1.4vh, 15px);
+  color: #1b2a4a;
+  line-height: 1;
+}
+
+.safety-chip-sub {
+  font-weight: 700;
+  color: rgba(27, 42, 74, 0.75);
+  font-size: clamp(9px, 1vh, 11px);
+  margin-top: 0;
+}
+
+.safety-chip-days {
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  transition: background 0.3s ease;
+}
+
+.safety-chip-days.safety-level-safe {
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.95), rgba(76, 175, 80, 0.9));
+}
+
+.safety-chip-days.safety-level-warning {
+  background: linear-gradient(135deg, rgba(251, 192, 45, 0.95), rgba(255, 193, 7, 0.9));
+}
+
+.safety-chip-days.safety-level-critical {
+  background: linear-gradient(135deg, rgba(211, 47, 47, 0.95), rgba(229, 57, 53, 0.9));
+}
+
+.days-display {
+  font-size: clamp(28px, 4vh, 40px);
+  font-weight: 950;
+  line-height: 1;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  min-width: 60px;
+  text-align: center;
+}
+
+.days-label {
+  font-size: clamp(8px, 1vh, 10px);
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  opacity: 0.95;
+}
+
+.safety-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  grid-column: 1 / 3;
+  grid-row: 3;
+}
+
+.date-input {
+  padding: 7px 12px;
+  border: 2px solid rgba(27, 42, 74, 0.18);
+  border-radius: 10px;
+  background: rgba(27, 42, 74, 0.06);
+  color: #1b2a4a;
+  font-size: clamp(12px, 1.4vh, 14px);
+  font-weight: 700;
+}
+
+.reset-btn {
+  padding: 7px 14px;
+  background: rgba(27, 42, 74, 0.1);
+  border: 2px solid rgba(27, 42, 74, 0.18);
+  border-radius: 10px;
+  color: #1b2a4a;
+  font-size: clamp(12px, 1.4vh, 14px);
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.reset-btn:hover {
+  background: rgba(27, 42, 74, 0.15);
+}
+
+/* Right stack: weather + clock */
+.right-stack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.8vw;
+  color: #131a3f;
+  height: 100%;
+}
+
+.loc-weather,
+#clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  height: fit-content;
+  text-align: center;
+  gap: 0.4vh;
+}
+
+.loc-weather {
+  text-align: left;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.location {
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  opacity: 0.95;
+  font-size: 2.5vh;
+}
+
+.weather {
+  font-size: 3.4vh;
+  font-weight: 950;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 0;
+}
+
+.weather span {
+  font-size: clamp(28px, 4.2vh, 42px);
+}
+
+#condition {
+  opacity: 0.9;
+  font-size: clamp(16px, 1.8vh, 18px);
+  font-weight: 700;
+}
+
+/* Clock */
+#clock {
+  display: grid;
+  gap: 4px;
+}
+
+#time {
+  font-size: 5vh;
+  font-weight: 950;
+  letter-spacing: 1px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#date {
+  opacity: 0.95;
+  font-size: clamp(18px, 1.8vh, 18px);
+  padding-right: 40px;
+  font-weight: 700;
+}

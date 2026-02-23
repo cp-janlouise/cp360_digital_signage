@@ -1,0 +1,70 @@
+/* =========================
+   TICKER STYLES
+   ========================= */
+
+.ticker {
+  height: 3vh;
+  min-height: 35px;
+
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  border-radius: 12px;
+}
+
+.ticker-track {
+  width: 100%;
+  overflow: hidden;
+}
+
+.ticker-inner {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+
+  /* GPU smoothness */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+
+  /* JS sets these */
+  --scroll-distance: 0px;
+  --scroll-duration: 20s;
+
+  animation: tickerScroll var(--scroll-duration) linear infinite;
+}
+
+.ticker-seq {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.ticker-item {
+  display: inline-block;
+  padding-right: 6rem;
+
+  font-weight: 700;
+  font-size: 3vh;
+  color: #131a3f;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Move by the exact pixel width of ONE sequence */
+@keyframes tickerScroll {
+  from {
+    transform: translate3d(calc(-1 * var(--scroll-distance)), 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}

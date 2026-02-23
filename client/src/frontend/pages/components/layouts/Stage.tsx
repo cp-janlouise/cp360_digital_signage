@@ -2,25 +2,6 @@ import React from "react";
 import "/src/frontend/styles/stage.css";
 import type { Layout, MediaItem, SlotContent } from "./Layouts";
 
-function ScorecardWidget() {
-  return (
-    <div className="cardInner center">
-      <div className="bigTitle">SCORECARD</div>
-      <div className="fakeChart" />
-      <div className="fakeLines" />
-    </div>
-  );
-}
-
-function PlaceholderWidget() {
-  return (
-    <div className="cardInner center">
-      <div className="bigTitle">WIDGET</div>
-      <div className="muted">Placeholder</div>
-    </div>
-  );
-}
-
 function renderSlot(content: SlotContent, media: MediaItem[]) {
   if (content.kind === "empty") {
     return (
@@ -31,11 +12,14 @@ function renderSlot(content: SlotContent, media: MediaItem[]) {
   }
 
   if (content.kind === "widget") {
-    if (content.widget === "scorecard") return <ScorecardWidget />;
-    return <PlaceholderWidget />;
+    return (
+      <div className="cardInner center">
+        <div className="muted">Widget: {(content as any).widget}</div>
+      </div>
+    );
   }
 
-  const m = media.find((x) => x.id === content.mediaId);
+  const m = media.find((x) => x.id === (content as any).mediaId);
   if (!m) {
     return (
       <div className="cardInner center">
@@ -78,9 +62,13 @@ type Props = {
 const Stage: React.FC<Props> = ({ layout, mediaLibrary }) => {
   return (
     <div className="stageGrid">
-      <div className="cardSlot hero">{renderSlot(layout.slots.hero, mediaLibrary)}</div>
-      <div className="cardSlot rightTop">{renderSlot(layout.slots.rightTop, mediaLibrary)}</div>
-      <div className="cardSlot rightBottom">
+      <div className="cardSlot slotHero">
+        {renderSlot(layout.slots.hero, mediaLibrary)}
+      </div>
+      <div className="cardSlot slotRightTop">
+        {renderSlot(layout.slots.rightTop, mediaLibrary)}
+      </div>
+      <div className="cardSlot slotRightBottom">
         {renderSlot(layout.slots.rightBottom, mediaLibrary)}
       </div>
     </div>
