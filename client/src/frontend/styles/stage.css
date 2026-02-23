@@ -1,0 +1,66 @@
+.stageGrid {
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+}
+
+.cardSlot {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+}
+
+.hero {
+  grid-row: 1 / span 2;
+}
+
+.cardInner {
+  width: 100%;
+  padding: 16px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bigTitle {
+  font-weight: 900;
+  font-size: 22px;
+}
+
+.muted {
+  opacity: 0.7;
+  font-size: 13px;
+  text-align: center;
+  padding: 0 10px;
+}
+
+.mediaFill {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fakeChart {
+  width: 160px;
+  height: 110px;
+  border-radius: 999px;
+  border: 18px solid rgba(0, 0, 0, 0.08);
+}
+
+.fakeLines {
+  width: 220px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}

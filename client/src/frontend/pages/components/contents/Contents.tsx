@@ -7,7 +7,7 @@ export type MediaItem = {
   id: string;
   type: MediaType;
   title: string;
-  src: string; // website URL or blob URL for file-based media
+  src: string; // website URL, data URL, or blob URL
   file?: File; // optional for later upload
   createdAt: string;
 };
@@ -15,6 +15,8 @@ export type MediaItem = {
 type Props = {
   initialTab?: ContentTab;
   initialItems?: MediaItem[];
+  /** Emits the latest All Media list to a parent (ex: Dashboard -> Layouts/Stage). */
+  onMediaItemsChange?: (items: MediaItem[]) => void;
   onNavigate?: (view: "dashboard" | "accounts") => void;
 };
 
@@ -46,11 +48,58 @@ const DEFAULT_ITEMS: MediaItem[] = [
   },
 ];
 
-const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigate }) => {
+const LS_KEY = "cp360_contents_v1";
 
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>(
-    initialItems ?? DEFAULT_ITEMS
-  );
+function loadStoredItems(): MediaItem[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    // Defensive: only accept safe primitive fields.
+    return parsed
+      .filter((x) => x && typeof x === "object")
+      .map((x: any) => ({
+        id: String(x.id ?? makeId()),
+        type: x.type as MediaType,
+        title: String(x.title ?? "Untitled"),
+        src: String(x.src ?? ""),
+        createdAt: String(x.createdAt ?? new Date().toISOString()),
+      }))
+      .filter((x) => x.src && ["image", "video", "website", "music"].includes(x.type));
+  } catch {
+    return [];
+  }
+}
+
+function storeItems(items: MediaItem[]) {
+  try {
+    const safe = items.map((m) => ({
+      id: m.id,
+      type: m.type,
+      title: m.title,
+      src: m.src,
+      createdAt: m.createdAt,
+    }));
+    localStorage.setItem(LS_KEY, JSON.stringify(safe));
+  } catch {
+    // ignore storage failures (private mode, quota, etc.)
+  }
+}
+
+const Contents: React.FC<Props> = ({
+  initialTab = "all",
+  initialItems,
+  onMediaItemsChange,
+  onNavigate,
+}) => {
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(() => {
+    if (initialItems && initialItems.length) return initialItems;
+    const stored = loadStoredItems();
+    return stored.length ? stored : DEFAULT_ITEMS;
+  });
+
   const [activeTab, setActiveTab] = useState<ContentTab>(initialTab);
   const [search, setSearch] = useState("");
 
@@ -61,12 +110,17 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigat
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+
+  // Keep parent (Dashboard) and localStorage in sync.
+  useEffect(() => {
+    storeItems(mediaItems);
+    onMediaItemsChange?.(mediaItems);
+  }, [mediaItems, onMediaItemsChange]);
 
   const visibleItems = useMemo(() => {
     const byTab =
-      activeTab === "all"
-        ? mediaItems
-        : mediaItems.filter((m) => m.type === activeTab);
+      activeTab === "all" ? mediaItems : mediaItems.filter((m) => m.type === activeTab);
 
     const q = search.trim().toLowerCase();
     if (!q) return byTab;
@@ -122,7 +176,15 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigat
     else if (file.type.startsWith("audio/")) setNewType("music");
   };
 
-  const addItem = () => {
+  const readAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+
+  const addItem = async () => {
     const title = newTitle.trim();
     if (!title) return alert("Please enter a title.");
 
@@ -156,7 +218,19 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigat
     if (newType === "video" && !isVideo) return alert("Selected file is not a video.");
     if (newType === "music" && !isAudio) return alert("Selected file is not an audio.");
 
-    const previewUrl = URL.createObjectURL(selectedFile);
+    // For images, store as a data URL so it survives refreshes.
+    // For video/audio, use an object URL (best for large files).
+    let previewUrl = "";
+    try {
+      if (newType === "image") {
+        previewUrl = await readAsDataUrl(selectedFile);
+      } else {
+        previewUrl = URL.createObjectURL(selectedFile);
+        objectUrlsRef.current.add(previewUrl);
+      }
+    } catch {
+      return alert("Could not read that file. Please try another one.");
+    }
 
     setMediaItems((prev) => [
       {
@@ -178,10 +252,19 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigat
       const target = prev.find((m) => m.id === id);
       if (target?.file && target.src.startsWith("blob:")) {
         URL.revokeObjectURL(target.src);
+        objectUrlsRef.current.delete(target.src);
       }
       return prev.filter((m) => m.id !== id);
     });
   };
+
+  // Revoke any remaining object URLs on unmount.
+  useEffect(() => {
+    return () => {
+      for (const url of objectUrlsRef.current) URL.revokeObjectURL(url);
+      objectUrlsRef.current.clear();
+    };
+  }, []);
 
   const tabLabel = activeTab === "all" ? "All Media" : prettyType(activeTab);
 
@@ -195,13 +278,11 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigat
         )}
         <h1 className="accountsPageTitle">Contents</h1>
       </div>
-        <div className="contentsTop">
-    
+
+      <div className="contentsTop">
         <div className="contentsTitleWrap">
           <h1 className="contentsTitle">{tabLabel}</h1>
-          <div className="contentsSubtitle">
-            Total stored in All Media: {counts.all}
-          </div>
+          <div className="contentsSubtitle">Total stored in All Media: {counts.all}</div>
         </div>
 
         <div className="contentsActions">
@@ -227,10 +308,7 @@ const Contents: React.FC<Props> = ({ initialTab = "all", initialItems, onNavigat
         <TabButton active={activeTab === "video"} onClick={() => setActiveTab("video")}>
           Videos ({counts.video})
         </TabButton>
-        <TabButton
-          active={activeTab === "website"}
-          onClick={() => setActiveTab("website")}
-        >
+        <TabButton active={activeTab === "website"} onClick={() => setActiveTab("website")}>
           Website URL ({counts.website})
         </TabButton>
         <TabButton active={activeTab === "music"} onClick={() => setActiveTab("music")}>
@@ -374,13 +452,7 @@ function EmptyState({ activeTab }: { activeTab: ContentTab }) {
   );
 }
 
-function MediaCard({
-  item,
-  onRemove,
-}: {
-  item: MediaItem;
-  onRemove: () => void;
-}) {
+function MediaCard({ item, onRemove }: { item: MediaItem; onRemove: () => void }) {
   return (
     <div className="mediaCard">
       <div className="mediaCardTop">
@@ -396,7 +468,9 @@ function MediaCard({
       <div className="mediaType">{prettyType(item.type)}</div>
 
       <div className="mediaPreviewWrap">
-        {item.type === "image" && <img className="imgPreview" src={item.src} alt={item.title} />}
+        {item.type === "image" && (
+          <img className="imgPreview" src={item.src} alt={item.title} />
+        )}
 
         {item.type === "video" && <video className="vidPreview" src={item.src} controls />}
 

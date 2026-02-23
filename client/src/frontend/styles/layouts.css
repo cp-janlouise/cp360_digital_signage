@@ -1,257 +1,162 @@
-.layouts {
+.layoutsPage { width: 100%; }
+
+.layoutsHeader{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px; gap:12px;
+}
+
+.layoutsHeaderLeft{ display:flex; align-items:center; gap:12px; }
+.layoutsH1{ font-size:26px; font-weight:800; color:#111; }
+.layoutsSub{ font-size:13px; opacity:.75; }
+
+.layoutsHeaderRight{ display:flex; align-items:center; gap:10px; }
+
+.layoutsGrid2{
+  display:grid;
+  grid-template-columns: 360px 1fr;
+  gap:16px;
+  padding:0 16px 16px 16px;
+}
+
+.panel{
+  background:#fff;
+  border:1px solid #e9e9e9;
+  border-radius:14px;
+  padding:12px;
+}
+
+.panelTitle{ font-weight:800; margin-bottom:10px; }
+
+.layoutList{ display:grid; gap:10px; }
+
+.layoutRow{
+  width:100%;
+  text-align:left;
+  border:1px solid #e9e9e9;
+  background:#fff;
+  border-radius:12px;
+  padding:10px;
+  cursor:pointer;
+}
+.layoutRowActive{ border-color:#1f2a44; box-shadow:0 0 0 2px rgba(31,42,68,.10); }
+
+.layoutRowTop{ display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.layoutName{ font-weight:800; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.layoutMeta{ font-size:11px; opacity:.7; }
+
+.layoutRowActions{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+.pill{ font-size:11px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; opacity:.85; }
+
+.emptyBox{
+  border:1px dashed #d9d9d9; border-radius:14px;
+  padding:18px; text-align:center; opacity:.9;
+}
+.emptyTitle{ font-weight:800; }
+.emptyText{ margin-top:8px; font-size:13px; opacity:.8; }
+
+.rowActions{ display:flex; gap:10px; margin-top:12px; justify-content:flex-end; }
+
+.previewGrid{
+  display:grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap:12px;
+}
+.pCard{
+  border:1px solid #e9e9e9;
+  border-radius:14px;
+  padding:10px;
+}
+.pCardBig{ grid-row:1 / span 2; }
+
+.pCardTop{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.pCardTitle{ font-weight:800; }
+.pCardLabel{ font-size:12px; opacity:.75; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+
+.pCardBody{ margin-top:10px; }
+.thumbImg{ width:100%; border-radius:12px; display:block; }
+.thumbPlaceholder{
+  width:100%;
+  border:1px dashed #d9d9d9;
+  border-radius:12px;
+  padding:22px;
+  text-align:center;
+  opacity:.75;
+}
+
+.input, .select{
+  height:38px; border-radius:10px;
+  border:1px solid #e5e5e5;
+  padding:0 12px; outline:none;
+  min-width: 240px;
+}
+
+.btnPrimary{
+  height:38px; padding:0 14px;
+  border-radius:10px; border:1px solid #1f2a44;
+  background:#1f2a44; color:#fff;
+  cursor:pointer; font-weight:700;
+
+}
+
+.addLayout{
+  height:38px; padding:0 14px;
+  border-radius:10px; border:1px solid #1f2a44;
+  background:#1f2a44; color:#fff;
+  cursor:pointer; font-weight:700;
   width: 100%;
 }
-
-.layoutsTop {
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.btnGhost{
+  height:38px; padding:0 14px;
+  border-radius:10px; border:1px solid #e5e5e5;
+  background:#fff; cursor:pointer; font-weight:700;
 }
-
-.layoutsPageTitle {
-  margin: 0;
-  text-indent: -490px;
+.btnDanger{
+  height:38px; padding:0 14px;
+  border-radius:10px; border:1px solid #c0392b;
+  background:#c0392b; color:#fff; cursor:pointer; font-weight:800;
 }
-
-.layoutsTitleWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.layoutsTitle {
-  margin: 0;
-  font-size: 26px;
-  color: black;
-}
-
-.layoutsSubtitle {
-  opacity: 0.7;
-  font-size: 13px;
-}
-
-.layoutsActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.layoutsSearch {
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid #e5e5e5;
-  min-width: 260px;
-  outline: none;
-}
-
-.layoutsTabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 0 16px 12px 16px;
-}
-
-.tabBtn {
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid #e5e5e5;
-  background: white;
-  color: #111;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.tabBtnActive {
-  border-color: #1f2a44;
-  background: #1f2a44;
-  color: white;
-}
-
-.layoutsBody {
-  padding: 16px;
-}
-
-.layoutGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
-
-.emptyState {
-  border: 1px dashed #d8d8d8;
-  border-radius: 14px;
-  padding: 24px;
-  text-align: center;
-  opacity: 0.85;
-}
-
-.emptyTitle {
-  margin: 0;
-}
-
-.emptyText {
-  margin-top: 10px;
-}
-
-/* Cards */
-.layoutCard {
-  border: 1px solid #e8e8e8;
-  border-radius: 14px;
-  padding: 12px;
-  background: white;
-}
-
-.layoutCardTop {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-}
-
-.layoutCardTitle {
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.layoutMeta {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-top: 6px;
-}
-
-.layoutPreviewWrap {
-  margin-top: 10px;
-}
-
-.layoutImgPreview {
-  width: 100%;
-  border-radius: 12px;
-  display: block;
-}
-
-.layoutPlaceholder {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px dashed #d8d8d8;
-  padding: 22px;
-  text-align: center;
-  opacity: 0.7;
-}
-
-/* Buttons */
-.btnPrimary {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid #1f2a44;
-  background: #1f2a44;
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btnGhost {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid #e5e5e5;
-  background: white;
-  cursor: pointer;
-}
-
-.btnIcon {
-  border: 1px solid #e5e5e5;
-  background: white;
-  border-radius: 10px;
-  cursor: pointer;
-  padding: 6px 10px;
+.btnMini{
+  height:34px; padding:0 12px;
+  border-radius:10px; border:1px solid #e5e5e5;
+  background:#fff; cursor:pointer; font-weight:700;
 }
 
 /* Modal */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-  z-index: 9999;
+.modalOverlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center;
+  padding:16px;
+  z-index:9999;
 }
+.modalCard{
+  width:min(900px, 100%);
+  background:#fff;
+  border-radius:14px;
+  padding:16px;
+}
+.modalTitle{ font-size:18px; font-weight:900; margin-bottom:12px; }
+.modalActions{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
 
-.modalCard {
-  width: min(560px, 100%);
-  background: white;
-  border-radius: 14px;
-  padding: 16px;
-}
+.field{ display:grid; gap:6px; margin-bottom:12px; }
+.label{ font-size:13px; opacity:.75; }
+.editorHint{ font-size:13px; opacity:.75; margin: 8px 0 12px 0; }
 
-.modalTitle {
-  margin-top: 0;
-  margin-bottom: 12px;
+.slotEditorGrid{
+  display:grid;
+  grid-template-columns: 1.2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap:12px;
 }
-
-.formGrid {
-  display: grid;
-  gap: 10px;
+.slotBox{
+  border:1px solid #e9e9e9;
+  border-radius:14px;
+  padding:12px;
 }
-
-.formLabel {
-  display: grid;
-  gap: 6px;
-}
-
-.labelText {
-  font-size: 13px;
-  opacity: 0.75;
-}
-
-.input,
-.select {
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid #e5e5e5;
-  padding: 0 12px;
-  outline: none;
-}
-
-.hiddenFile {
-  display: none;
-}
-
-.fileRow {
-  display: grid;
-  gap: 8px;
-}
-
-.filePicker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.fileName {
-  font-size: 13px;
-  opacity: 0.8;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fileMeta {
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 14px;
-}
+.slotBox:first-child{ grid-row:1 / span 2; } /* hero */
+.slotTop{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.slotTitle{ font-weight:900; }
+.slotSub{ font-size:12px; opacity:.7; }
+.slotValue{ font-size:12px; opacity:.75; max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.slotControls{ display:flex; gap:10px; align-items:center; margin-top:10px; }

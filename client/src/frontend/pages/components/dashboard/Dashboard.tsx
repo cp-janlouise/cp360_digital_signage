@@ -1,34 +1,50 @@
-import React, {  useState } from "react";
+import React, { useState } from "react";
 import "/src/frontend/styles/dashboard.css";
 import "/src/frontend/styles/accounts.css";
 import "/src/frontend/styles/contents.css";
 import "/src/frontend/styles/layouts.css";
+import "/src/frontend/styles/stage.css";
+
 import logo from "/src/frontend/images/lg_cp360_white.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import 'bootstrap-icons/font/bootstrap-icons.css';
-import Accounts from "../accounts/Accounts";
-import Contents from "../contents/Contents";
-import Layouts from "../layouts/Layouts";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
+import Accounts from "../accounts/Accounts";
+import Contents, { type MediaItem as ContentsMediaItem } from "../contents/Contents";
+import Layouts, { type Layout, type MediaItem } from "../layouts/Layouts";
+import Stage from "../layouts/Stage";
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
 type Props = {
-  activeTab: "dashboard" | "campaigns" | "contents" | "screens" | "playlists" | "accounts";
-  onNavigate: (view: "dashboard" | "campaigns" | "contents" | "screens" | "playlists" | "accounts") => void;
+  onNavigate: (
+    view:
+      | "dashboard"
+      | "campaigns"
+      | "contents"
+      | "screens"
+      | "playlists"
+      | "accounts"
+      | "layouts"
+      | "user"
+      | "manageUsers"
+      | "manageOrganizations"
+  ) => void;
 };
-
 
 const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) => {
   const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState(false);
 
+  // Layout system
+  const [activeLayout, setActiveLayout] = useState<Layout | null>(null);
+  const [allMedia, setAllMedia] = useState<MediaItem[]>([]);
 
   const [activeView, setActiveView] = useState<
     | "dashboard"
@@ -42,11 +58,18 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
     | "playlists"
     | "layouts"
     | "user"
-    | "addUser"
   >("dashboard");
 
- const isHome = activeView === "dashboard";
+  const isHome = activeView === "dashboard";
+
   const handleLogout = () => onLogout();
+
+  const handleHome = () => {
+    setIsCampaignsOpen(false);
+    setIsAccountsOpen(false);
+    setActiveView("dashboard");
+    onNavigate("dashboard");
+  };
 
   const renderMain = () => {
     switch (activeView) {
@@ -55,7 +78,6 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
           <div className="dashboardHome">
             <div className="topRow">
               <h1 className="pageTitle">Dashboard</h1>
-              
             </div>
 
             <div className="summaryCards">
@@ -64,47 +86,72 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Campaigns</div>
               </button>
+
               <button className="card" onClick={() => setActiveView("contents")}>
                 <div className="cardTitle">CONTENTS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Contents</div>
               </button>
+
               <button className="card" onClick={() => setActiveView("screens")}>
                 <div className="cardTitle">SCREENS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Screens</div>
               </button>
+
               <button className="card" onClick={() => setActiveView("playlists")}>
                 <div className="cardTitle">PLAYLISTS</div>
                 <div className="cardNumber">0</div>
                 <div className="cardAction">Add Playlists</div>
               </button>
+
+              <button className="card" onClick={() => setActiveView("layouts")}>
+                <div className="cardTitle">LAYOUTS</div>
+                <div className="cardNumber">0</div>
+                <div className="cardAction">Manage Layouts</div>
+              </button>
             </div>
 
-      <div className="calendarSection">
-        <h2 className="calendarTitle">Schedules:</h2>
+            {/* ✅ Step 6: render the replaceable cards preview here */}
+            <div style={{ marginTop: 18 }}>
+              <h2 style={{ marginBottom: 10 }}>Active Layout Preview</h2>
 
-        <div className="calendarCard">
-          <FullCalendar 
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            height="400px"
-            events={[
-              { title: "Campaign A", start: "2026-02-12T10:00:00", 
-                end: "2026-02-12T12:00:00", 
-                description: "Campaign A scheduled from 10 AM to 12 PM. Please do not end it early." },
-              { title: "Screen Rotation", 
-                date: "2026-02-14" },
-            ]}
-          />
-        </div>
-      </div>
-    </div>
+              <div className="middleArea" style={{ height: 420 }}>
+                {activeLayout ? (
+                  <Stage layout={activeLayout} mediaLibrary={allMedia} />
+                ) : (
+                  <div style={{ padding: 16 }}>No active layout selected.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="calendarSection">
+              <h2 className="calendarTitle">Schedules:</h2>
+
+              <div className="calendarCard">
+                <FullCalendar
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: "prev,next today",
+                    center: "title",
+                    right: "dayGridMonth,timeGridWeek,timeGridDay",
+                  }}
+                  height="400px"
+                  events={[
+                    {
+                      title: "Campaign A",
+                      start: "2026-02-12T10:00:00",
+                      end: "2026-02-12T12:00:00",
+                      description:
+                        "Campaign A scheduled from 10 AM to 12 PM. Please do not end it early.",
+                    },
+                    { title: "Screen Rotation", date: "2026-02-14" },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
         );
 
       case "campaigns":
@@ -112,29 +159,18 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
           <div className="CampaignsHome">
             <div className="topRow">
               {!isHome && (
-                <button
-                  className="homeButton"
-                  onClick={() => {
-                    setIsCampaignsOpen(false);
-                    setIsAccountsOpen(false);
-                    setActiveView("dashboard");
-                    onNavigate("dashboard");
-                  }}
-                >
+                <button className="homeButton" onClick={handleHome}>
                   HOME
                 </button>
-               )}
+              )}
               <h1 className="campaignsTitle">Campaigns</h1>
-               
 
               <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search campaign title or name"
-                />
+                <input className="searchInput" placeholder="Search campaign title or name" />
                 <button className="addCampaignBtn">+ ADD A CAMPAIGN</button>
               </div>
             </div>
+
             <div className="viewPage">
               <h2>No campaigns available yet.</h2>
             </div>
@@ -152,51 +188,62 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
         return (
           <div className="ScreensHome">
             <div className="topRow">
-                {!isHome && (
-                <button
-                  className="homeButton"
-                  onClick={() => {
-                    setIsCampaignsOpen(false);
-                    setIsAccountsOpen(false);
-                    setActiveView("dashboard");
-                    onNavigate("dashboard");
-                  }}
-                >
+              {!isHome && (
+                <button className="homeButton" onClick={handleHome}>
                   HOME
-                </button> )}
+                </button>
+              )}
               <h1 className="screensTitle">Screens</h1>
               <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search screen title or name"
-                />
+                <input className="searchInput" placeholder="Search screen title or name" />
                 <button className="addCampaignBtn">+ ADD A SCREEN</button>
               </div>
             </div>
+
             <div className="viewPage">
               <h2>No screens available yet.</h2>
             </div>
           </div>
         );
 
-        case "contents":
-        return <Contents initialTab="all" onNavigate={(view) => setActiveView(view as any)} />;
+      case "contents":
+        return (
+          <Contents
+            initialTab="all"
+            onNavigate={(view) => setActiveView(view as any)}
+            onMediaItemsChange={(items: ContentsMediaItem[]) => {
+              // ✅ Keep consistent shape for Layouts/Stage
+              setAllMedia(
+                items.map((m) => ({
+                  id: m.id,
+                  type: m.type as any,
+                  title: m.title,
+                  src: m.src,
+                }))
+              );
+            }}
+          />
+        );
 
-
-        case "accounts":
+      case "accounts":
         return <Accounts activeTab="accounts" onNavigate={(view) => setActiveView(view)} />;
 
-        case "manageUsers":
+      case "manageUsers":
         return <Accounts activeTab="manageUsers" onNavigate={(view) => setActiveView(view)} />;
-        case "manageOrganizations":
-        return <Accounts activeTab="manageOrganizations" onNavigate={(view) => setActiveView(view)} />; 
 
-         
+      case "manageOrganizations":
+        return <Accounts activeTab="manageOrganizations" onNavigate={(view) => setActiveView(view)} />;
 
-        case "layouts":
-        return <Layouts onNavigate={(view) => setActiveView(view)} />;
+      case "layouts":
+        return (
+          <Layouts
+            mediaLibrary={allMedia}
+            onUseLayout={(layout) => setActiveLayout(layout)}
+            onNavigateHome={handleHome}
+          />
+        );
 
-        case "user":
+      case "user":
         return (
           <div className="UserHome">
             <div className="topRow">
@@ -230,7 +277,9 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
           </button>
 
           <button
-            className={`navItem ${activeView === "campaigns" || activeView === "createCampaign" ? "active" : ""}`}
+            className={`navItem ${
+              activeView === "campaigns" || activeView === "createCampaign" ? "active" : ""
+            }`}
             onClick={() => {
               setIsCampaignsOpen((s) => !s);
               setIsAccountsOpen(false);
@@ -259,8 +308,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
               setActiveView("screens");
             }}
           >
-          <i className="bi bi-laptop"></i> <span className="userSize">SCREENS</span>
-
+            <i className="bi bi-laptop"></i> <span className="userSize">SCREENS</span>
           </button>
 
           <button
@@ -285,7 +333,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
             <i className="bi bi-collection-play"></i> <span className="userSize">PLAYLISTS</span>
           </button>
 
-        <button
+          <button
             className={`navItem ${activeView === "layouts" ? "active" : ""}`}
             onClick={() => {
               setIsCampaignsOpen(false);
@@ -293,10 +341,17 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
               setActiveView("layouts");
             }}
           >
-             <i className="bi bi-grid-1x2"></i> <span className="userSize">LAYOUTS</span>
-          </button> 
+            <i className="bi bi-grid-1x2"></i> <span className="userSize">LAYOUTS</span>
+          </button>
+
           <button
-            className={`navItem ${activeView === "accounts" || activeView === "manageUsers" || activeView === "manageOrganizations" ? "active" : ""}`}
+            className={`navItem ${
+              activeView === "accounts" ||
+              activeView === "manageUsers" ||
+              activeView === "manageOrganizations"
+                ? "active"
+                : ""
+            }`}
             onClick={() => {
               setIsCampaignsOpen(false);
               setIsAccountsOpen((s) => !s);
@@ -304,7 +359,6 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
             }}
           >
             <i className="bi bi-person-rolodex"></i> <span className="userSize">ACCOUNTS</span>
-            
           </button>
 
           {isAccountsOpen && (
@@ -316,9 +370,8 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
                 Manage Users
               </button>
             </div>
-
-            
           )}
+
           {isAccountsOpen && (
             <div className="submenu">
               <button
@@ -328,29 +381,26 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
                 Manage Organizations
               </button>
             </div>
-          )} 
+          )}
         </nav>
 
         <button
-            className={`navItem ${activeView === "user" ? "active" : ""}` }
-            onClick={() => {
-              setIsCampaignsOpen(false);
-              setIsAccountsOpen(false);
-              setActiveView("user");
-            }}
-          >
-            <i className="bi bi-person-circle"></i> <span className="userSize">USER</span>
-          </button>
+          className={`navItem ${activeView === "user" ? "active" : ""}`}
+          onClick={() => {
+            setIsCampaignsOpen(false);
+            setIsAccountsOpen(false);
+            setActiveView("user");
+          }}
+        >
+          <i className="bi bi-person-circle"></i> <span className="userSize">USER</span>
+        </button>
 
         <div className="sidebarBottom">
           <button className="logoutBtn" onClick={handleLogout}>
             Logout
           </button>
         </div>
-
-        
       </aside>
-      
 
       <main className="mainArea">{renderMain()}</main>
     </div>
