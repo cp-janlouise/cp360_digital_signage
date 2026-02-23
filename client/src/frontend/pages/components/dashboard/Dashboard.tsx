@@ -2,6 +2,7 @@ import React, {  useState } from "react";
 import "/src/frontend/styles/dashboard.css";
 import "/src/frontend/styles/accounts.css";
 import "/src/frontend/styles/contents.css";
+import "/src/frontend/styles/layouts.css";
 import logo from "/src/frontend/images/lg_cp360_white.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FullCalendar from "@fullcalendar/react";
@@ -11,6 +12,8 @@ import interactionPlugin from "@fullcalendar/interaction";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Accounts from "../accounts/Accounts";
 import Contents from "../contents/Contents";
+import Layouts from "../layouts/Layouts";
+
 
 interface DashboardProps {
   onLogout: () => void;
@@ -52,12 +55,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
           <div className="dashboardHome">
             <div className="topRow">
               <h1 className="pageTitle">Dashboard</h1>
-              <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search campaign title or name"
-                />
-              </div>
+              
             </div>
 
             <div className="summaryCards">
@@ -196,35 +194,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
          
 
         case "layouts":
-        return (
-          <div className="LayoutsHome">
-            <div className="topRow">
-              {!isHome && (
-                <button
-                  className="homeButton"
-                  onClick={() => {
-                    setIsCampaignsOpen(false);
-                    setIsAccountsOpen(false);
-                    setActiveView("dashboard");
-                    onNavigate("dashboard");
-                  }}
-                >
-                  HOME
-                </button> )}
-              <h1 className="layoutsTitle">Layouts</h1>
-              <div className="topActions">
-                <input
-                  className="searchInput"
-                  placeholder="Search layout title or name"
-                />
-                <button className="addCampaignBtn">+ ADD A LAYOUT</button>
-              </div>
-            </div>
-            <div className="viewPage">
-              <h2>No layouts available yet.</h2>
-            </div>
-          </div>
-        );
+        return <Layouts onNavigate={(view) => setActiveView(view)} />;
 
         case "user":
         return (

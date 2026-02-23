@@ -137,8 +137,15 @@
 
 .summaryCards{ 
     display:flex; 
-    gap:18px; 
-    margin-top:18px; 
+    gap:100px; 
+    margin-top:18px;
+    align-items: center;
+     justify-content: center;
+      flex-wrap: wrap;
+      background-color: #f9f9f9;
+      padding: 20px;
+      border-radius: 6px;
+       box-shadow: 0 4px 8px rgba(0,0,0,0.05);
 }
 .card:hover{ 
     transform:translateY(-5px); 
@@ -311,6 +318,13 @@
 }
 
  .campaignsTitle, .screensTitle, .contentsTitle, .layoutsTitle {
-    text-indent: -500px;
+    text-indent: -1400px;
+    
+}
+
+.layoutsTitle {
+margin: 0;
+  font-size: 26px;
+color: black; 
 }
 

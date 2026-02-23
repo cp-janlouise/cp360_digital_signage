@@ -157,9 +157,15 @@
     justify-content: center;
 }
 
- .campaignsTitle, .screensTitle, .contentsTitle, .layoutsTitle {
-    text-indent: -500px;
+.screensTitle, .contentsTitle, .layoutsTitle {
+    text-indent: -1400px;
 }
 .accountsPageTitle {
-    text-indent: -1550px;
+    text-indent:-1400px;
 }
+
+.layoutsTitle {
+    text-indent: -1400px; }
+ /* .campaignsTitle {
+     text-indent: -1400px;
+ } */
