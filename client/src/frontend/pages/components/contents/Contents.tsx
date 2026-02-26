@@ -110,7 +110,6 @@ const Contents: React.FC<Props> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const objectUrlsRef = useRef<Set<string>>(new Set());
 
   // Keep parent (Dashboard) and localStorage in sync.
   useEffect(() => {
@@ -222,15 +221,10 @@ const Contents: React.FC<Props> = ({
     // For video/audio, use an object URL (best for large files).
     let previewUrl = "";
     try {
-      if (newType === "image") {
-        previewUrl = await readAsDataUrl(selectedFile);
-      } else {
-        previewUrl = URL.createObjectURL(selectedFile);
-        objectUrlsRef.current.add(previewUrl);
-      }
-    } catch {
-      return alert("Could not read that file. Please try another one.");
-    }
+  previewUrl = await readAsDataUrl(selectedFile);
+} catch {
+  return alert("Could not read that file. Please try another one.");
+}
 
     setMediaItems((prev) => [
       {
@@ -248,23 +242,11 @@ const Contents: React.FC<Props> = ({
   };
 
   const removeItem = (id: string) => {
-    setMediaItems((prev) => {
-      const target = prev.find((m) => m.id === id);
-      if (target?.file && target.src.startsWith("blob:")) {
-        URL.revokeObjectURL(target.src);
-        objectUrlsRef.current.delete(target.src);
-      }
-      return prev.filter((m) => m.id !== id);
-    });
-  };
+  setMediaItems((prev) => prev.filter((m) => m.id !== id));
+};
 
   // Revoke any remaining object URLs on unmount.
-  useEffect(() => {
-    return () => {
-      for (const url of objectUrlsRef.current) URL.revokeObjectURL(url);
-      objectUrlsRef.current.clear();
-    };
-  }, []);
+
 
   const tabLabel = activeTab === "all" ? "All Media" : prettyType(activeTab);
 
@@ -472,8 +454,16 @@ function MediaCard({ item, onRemove }: { item: MediaItem; onRemove: () => void }
           <img className="imgPreview" src={item.src} alt={item.title} />
         )}
 
-        {item.type === "video" && <video className="vidPreview" src={item.src} controls />}
-
+{item.type === "video" && (
+  <video
+    key={item.src}
+    className="vidPreview"
+    src={item.src}
+    controls
+    preload="metadata"
+    playsInline
+  />
+)}
         {item.type === "music" && <audio className="audioPreview" src={item.src} controls />}
 
         {item.type === "website" && (

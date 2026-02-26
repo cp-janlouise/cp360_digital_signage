@@ -1,76 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react';
-import '/src/frontend/styles/ticker.css';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import "/src/frontend/styles/ticker.css";
 
 const messages = [
-  'CX that pays dividends. Be the next-gen CX. Welcome to CP360!',
-  'Your voices shape our future.',
-  'Employee Satisfaction Survey now ongoing.',
-  'Change makers start here.',
+  "REPRESENTING THE NEXT-GEN CX",
+  "OUR CULTURE IS AT THE HEART OF OUR SUCCESS",
+  "PEOPLE FIRST ALWAYS",
+  "EMPATHY AT CORE",
+  "CUSTOMER-CENTRIC EXCELLENCE",
+  "EMPLOYEE WELLBEING MATTERS",
+  "FOR THE PEOPLE, BY THE PEOPLE",
+  "#RECORDYEAR",
+  "#ONFIRE",
+  "THIS IS MY YEAR",
 ];
 
 export const Ticker: React.FC = () => {
-  const [messageIndex, setMessageIndex] = useState(0);
-  const innerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
-  const currentMessage = messages[messageIndex];
+  const combined = useMemo(() => messages.join("   ✦   "), []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 25000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const [durationSec, setDurationSec] = useState<number>(30);
 
   useEffect(() => {
-    const initTicker = () => {
-      const inner = innerRef.current;
-      if (!inner) return;
+    const adjust = () => {
+      const content = contentRef.current;
+      const track = trackRef.current;
+      if (!content || !track) return;
 
-      // Wait for fonts to load
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(() => {
-          const seq = inner.querySelector('.ticker-seq');
-          if (seq) {
-            // Remove old clone if exists
-            const oldClone = inner.querySelector('[data-clone="true"]');
-            if (oldClone) oldClone.remove();
+      // Same logic as your vanilla JS:
+      // speed = contentWidth / 50  (seconds)
+      const contentWidth = content.offsetWidth || 1000;
+      const speed = contentWidth / 50;
 
-            // Clone the sequence
-            const clone = seq.cloneNode(true) as HTMLElement;
-            clone.setAttribute('data-clone', 'true');
-            inner.appendChild(clone);
-
-            // Measure and set animation
-            const seqWidth = seq.getBoundingClientRect().width;
-            const pxPerSecond = 110;
-            const duration = seqWidth / pxPerSecond;
-
-            inner.style.setProperty('--scroll-distance', `${seqWidth}px`);
-            inner.style.setProperty('--scroll-duration', `${duration}s`);
-
-            // Restart animation
-            inner.style.animation = 'none';
-            inner.offsetHeight; // force reflow
-            inner.style.animation = '';
-          }
-        });
-      }
+      // Clamp so it never goes hyperspeed or glacier mode.
+      const clamped = Math.max(12, Math.min(speed, 120));
+      setDurationSec(clamped);
     };
 
-    initTicker();
-  }, [currentMessage]);
+    // fonts can affect width; wait for them if possible
+    const doAdjust = () => adjust();
+
+    if ((document as any).fonts?.ready) {
+      (document as any).fonts.ready.then(doAdjust).catch(doAdjust);
+    } else {
+      doAdjust();
+    }
+
+    window.addEventListener("resize", adjust);
+    return () => window.removeEventListener("resize", adjust);
+  }, []);
 
   return (
-    <footer className="ticker">
-      <div className="ticker-track">
-        <div className="ticker-inner" ref={innerRef}>
-          <div className="ticker-seq">
-            <span className="ticker-item">{currentMessage}</span>
-          </div>
+    <div className="ticker-wrap" aria-label="Ticker">
+      <div
+        className="ticker-track"
+        ref={trackRef}
+        style={{ animationDuration: `${durationSec}s` }}
+      >
+        <div className="ticker-content" ref={contentRef}>
+          {combined}
         </div>
+        <div className="ticker-content">{combined}</div>
       </div>
-    </footer>
+    </div>
   );
 };
 

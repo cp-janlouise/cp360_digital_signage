@@ -38,6 +38,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
           <img src={logo} alt="CP360-Logo" />
         </div>
 
+
         <form className="login-form">
             <h4 className="login-title">Welcome to CP360!</h4 >
 

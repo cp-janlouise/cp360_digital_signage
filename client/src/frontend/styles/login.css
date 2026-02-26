@@ -15,7 +15,7 @@ body {
 .loginCard {
   text-align: center;
   width: 500px;
-  height: 480px;
+  height: 430px;
   position: fixed;
   background-color: #05154E;
   left: 50%;
@@ -30,6 +30,7 @@ body {
     align-content:center;
     top: 100%;
     padding-top: 5%;
+    margin-right: calc(50% - 150px);
 }
 .username-input-group {
 

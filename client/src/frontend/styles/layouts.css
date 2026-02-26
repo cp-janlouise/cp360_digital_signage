@@ -115,6 +115,7 @@
   border: 1px solid var(--border);
   cursor: pointer;
   transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
+  
 }
 
 .btnPrimary:active,
@@ -129,6 +130,8 @@
   background: var(--primary);
   border-color: rgba(37, 99, 235, 0.55);
   color: #fff;
+  width: 250px;
+  height: auto;
 }
 
 .btnPrimary:hover {
@@ -714,7 +717,13 @@
   flex: 0 0 96px; /* reserve a fixed height for the TopBar */
   overflow: hidden;
   border-radius: 8px;
-  background: #fff;
+  background:
+    radial-gradient(circle at 12% 8%, #f4b544 0%, transparent 40%),
+    radial-gradient(circle at 88% 12%, #ec6a95 0%, transparent 40%),
+    radial-gradient(circle at 82% 88%, #1fb0c4 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, #4f73e6 0%, transparent 40%),
+    linear-gradient(180deg, #e7e3db 0%, #c8d3c9 100%);
+  background-attachment: fixed;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
@@ -758,6 +767,143 @@
   justify-content: center;
 }
 
+/* ===========================
+   Editor canvas: draggable + resizable frames (override older slot styles)
+   =========================== */
+
+/* Make modal stable: the canvas handles interaction, not the modal scroll */
+.editorModal {
+  overflow: scroll !important;
+}
+
+.editorFrameWithSidebar {
+  height: 100% !important;
+  min-height: 0;
+}
+
+.editorMain {
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Canvas is a fixed interaction surface (no internal scroll) */
+.editorCanvasArea {
+  position: relative;
+  overflow: hidden !important;
+  min-height: 0;
+}
+
+.canvasFrame {
+  position: absolute;
+  border-radius: 10px;
+  background: #fff;
+  border: 2px solid rgba(15, 23, 42, 0.10);
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.10);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  user-select: none;
+}
+
+.canvasFrameActive {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), 0 12px 30px rgba(2, 6, 23, 0.12);
+}
+
+.frameTitleBar {
+  height: 38px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  background: linear-gradient(180deg, rgba(246, 247, 251, 1), rgba(242, 244, 248, 1));
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  cursor: grab;
+}
+
+.frameTitleBar:active {
+  cursor: grabbing;
+}
+
+.frameTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.9);
+  min-width: 0;
+}
+
+.frameHint {
+  font-weight: 700;
+  font-size: 11px;
+  color: rgba(71, 85, 105, 0.75);
+  white-space: nowrap;
+}
+
+.frameActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.frameBtn {
+  height: 28px;
+  width: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.frameBtn:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.frameBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.frameMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.frameResizeHandle {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(37, 99, 235, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  cursor: nwse-resize;
+}
+
+/* Prevent legacy .canvasSlot styles from affecting frames */
+.canvasSlot {
+  display: none;
+}
+
 .canvasEmpty {
   color: #999;
   font-size: 13px;
@@ -768,7 +914,7 @@
   flex: 0 0 40px; /* reserve a fixed height for the Ticker */
   overflow: hidden;
   border-radius: 8px;
-  background: transparent;
+  background: white;
 }
 
 /* Editor modal full width and sidebar + main column layout */
@@ -776,7 +922,7 @@
   width: 90vw;
   max-width: none;
   height: 90vh;
-  overflow:scroll;
+  overflow: scroll;
   padding: 12px;
   box-sizing: border-box;
 }
@@ -803,22 +949,40 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   min-width: 320px;
-  background: transparent;
+  background:
+    radial-gradient(circle at 12% 8%, #f4b544 0%, transparent 40%),
+    radial-gradient(circle at 88% 12%, #ec6a95 0%, transparent 40%),
+    radial-gradient(circle at 82% 88%, #1fb0c4 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, #4f73e6 0%, transparent 40%),
+    linear-gradient(180deg, #e7e3db 0%, #c8d3c9 100%);
+  background-attachment: fixed;
 }
 
 .editorTopbarWrap {
   flex: 0 0 125px;
   overflow: hidden;
   border-radius: 8px;
-  background: #fff;
+  background:
+    radial-gradient(circle at 12% 8%, #f4b544 0%, transparent 40%),
+    radial-gradient(circle at 88% 12%, #ec6a95 0%, transparent 40%),
+    radial-gradient(circle at 82% 88%, #1fb0c4 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, #4f73e6 0%, transparent 40%),
+    linear-gradient(180deg, #e7e3db 0%, #c8d3c9 100%);
+  background-attachment: fixed;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
 .editorCanvasArea {
   flex: 1 1 auto;
-  background: #fafafa;
+  background:
+    radial-gradient(circle at 12% 8%, #f4b544 0%, transparent 40%),
+    radial-gradient(circle at 88% 12%, #ec6a95 0%, transparent 40%),
+    radial-gradient(circle at 82% 88%, #1fb0c4 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, #4f73e6 0%, transparent 40%),
+    linear-gradient(180deg, #e7e3db 0%, #c8d3c9 100%);
+  background-attachment: fixed;
   border-radius: 8px;
   padding: 12px;
   overflow: auto;
@@ -875,7 +1039,220 @@
 .slotEditorCompact { border-top: 1px solid #f0f0f0; padding: 8px 4px; }
 .slotEditorHeader { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
 .slotEditorBody { display:flex; flex-direction: column; gap:6px; }
-	slotActions { display:flex; gap:6px; align-items:center; }
+
+.slotActions { display:flex; gap:6px; align-items:center; }
 
 /* ticker area */
 .editorTickerWrap { flex: 0 0 44px; overflow: hidden; border-radius: 8px; background: transparent; }
+
+/* ===========================
+   Editor canvas: draggable + resizable frames
+   These rules override the older flex-wrapped .canvasSlot layout above.
+   =========================== */
+
+/* Make modal stable: the canvas handles interaction, not the modal scroll */
+.editorModal {
+  overflow: scroll !important;
+}
+
+.editorFrameWithSidebar {
+  height: 100% !important;
+  min-height: 0;
+}
+
+.editorMain {
+  min-height: 0;
+}
+
+.editorCanvasArea {
+  position: relative;
+  overflow: hidden; /* frames stay inside; no surprise scrolling while dragging */
+  display: block;
+  min-height: 0;
+  /* A friendly stage-like canvas size */
+  aspect-ratio: 16 / 9;
+}
+
+/* If the modal column is too short, let the canvas just grow normally */
+@supports not (aspect-ratio: 16 / 9) {
+  .editorCanvasArea { height: 52vh; }
+}
+
+.canvasFrame {
+  position: absolute;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  opacity: 0.5;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.canvasFrameActive {
+  outline: 3px solid rgba(37, 99, 235, 0.28);
+  border-color: rgba(37, 99, 235, 0.5);
+}
+
+.frameTitleBar {
+  height: 34px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  cursor: grab;
+}
+
+.frameTitleBar:active {
+  cursor: grabbing;
+}
+
+.frameTitle {
+  font-weight: 900;
+  font-size: 12px;
+  color: #0f172a;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.frameHint {
+  font-weight: 600;
+  font-size: 11px;
+  color: rgba(71, 85, 105, 0.85);
+}
+
+.frameActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.frameBtn {
+  width: 30px;
+  height: 26px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #f2f4f8;
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.frameBtn:hover {
+  background: #e8ecf5;
+}
+
+.frameBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.frameMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.frameResizeHandle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: 6px;
+  bottom: 6px;
+  border-radius: 4px;
+  background: rgba(37, 99, 235, 0.35);
+  border: 1px solid rgba(37, 99, 235, 0.55);
+  cursor: nwse-resize;
+}
+
+/* Hide the old flex-slot visuals in the editor canvas */
+.editorCanvasArea .canvasSlot,
+.editorCanvasArea .canvasSlotHeader,
+.editorCanvasArea .canvasSlotBody {
+  display: none;
+}
+
+
+/* ===========================
+   Frame resize handles (all sides + corners)
+   =========================== */
+
+/* Hide the legacy single-corner handle if present */
+.frameResizeHandle { display: none !important; }
+
+.frameHandle {
+  position: absolute;
+  z-index: 5;
+  /* transparent hit area */
+  background: transparent;
+}
+
+/* Edge handles (10px thick) */
+.frameHandle--n,
+.frameHandle--s {
+  left: 12px;
+  right: 12px;
+  height: 10px;
+}
+
+.frameHandle--n { top: -5px; cursor: ns-resize; }
+.frameHandle--s { bottom: -5px; cursor: ns-resize; }
+
+.frameHandle--e,
+.frameHandle--w {
+  top: 12px;
+  bottom: 12px;
+  width: 10px;
+}
+
+.frameHandle--e { right: -5px; cursor: ew-resize; }
+.frameHandle--w { left: -5px; cursor: ew-resize; }
+
+/* Corner handles (18px square) */
+.frameHandle--nw,
+.frameHandle--ne,
+.frameHandle--sw,
+.frameHandle--se {
+  width: 18px;
+  height: 18px;
+}
+
+.frameHandle--nw { left: -6px; top: -6px; cursor: nwse-resize; }
+.frameHandle--se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+
+.frameHandle--ne { right: -6px; top: -6px; cursor: nesw-resize; }
+.frameHandle--sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+
+/* Optional: show subtle grips on active frame only */
+.canvasFrameActive .frameHandle--nw,
+.canvasFrameActive .frameHandle--ne,
+.canvasFrameActive .frameHandle--sw,
+.canvasFrameActive .frameHandle--se {
+  background: rgba(37, 99, 235, 0.16);
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  border-radius: 6px;
+}
+
+/* Give TV remotes / touch devices a bit more forgiveness */
+@media (pointer: coarse) {
+  .frameHandle--n,
+  .frameHandle--s { height: 18px; }
+  .frameHandle--e,
+  .frameHandle--w { width: 18px; }
+  .frameHandle--nw,
+  .frameHandle--ne,
+  .frameHandle--sw,
+  .frameHandle--se { width: 26px; height: 26px; }
+}

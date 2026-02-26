@@ -1,6 +1,14 @@
 import React from "react";
 import "/src/frontend/styles/stage.css";
-import type { Layout, MediaItem, SlotContent } from "./Layouts";
+import type { Layout, MediaItem, SlotContent, SlotId } from "./Layouts";
+import TopBar from "./TopBar";
+import Ticker from "./Ticker";
+
+const DEFAULT_FRAMES: Record<SlotId, { x: number; y: number; w: number; h: number }> = {
+  hero:        { x: 0,    y: 0,  w: 66.5, h: 100 },
+  rightTop:    { x: 66.5, y: 0,  w: 33.5, h: 50  },
+  rightBottom: { x: 66.5, y: 50, w: 33.5, h: 50  },
+};
 
 function renderSlot(content: SlotContent, media: MediaItem[]) {
   if (content.kind === "empty") {
@@ -60,17 +68,39 @@ type Props = {
 };
 
 const Stage: React.FC<Props> = ({ layout, mediaLibrary }) => {
+  const slotOrder: SlotId[] = layout.slotOrder?.length
+    ? layout.slotOrder
+    : ["hero", "rightTop", "rightBottom"];
+
+  const slotFrames = layout.slotFrames ?? DEFAULT_FRAMES;
+
   return (
-    <div className="stageGrid">
-      <div className="cardSlot slotHero">
-        {renderSlot(layout.slots.hero, mediaLibrary)}
+    <div className="stageRoot">
+      <TopBar />
+
+      <div className="stageCanvas">
+        {slotOrder.map((slotId) => {
+          const frame = slotFrames[slotId];
+          const content = layout.slots[slotId];
+          return (
+            <div
+              key={slotId}
+              className="cardSlot"
+              style={{
+                position: "absolute",
+                left:   `${frame.x}%`,
+                top:    `${frame.y}%`,
+                width:  `${frame.w}%`,
+                height: `${frame.h}%`,
+              }}
+            >
+              {renderSlot(content, mediaLibrary)}
+            </div>
+          );
+        })}
       </div>
-      <div className="cardSlot slotRightTop">
-        {renderSlot(layout.slots.rightTop, mediaLibrary)}
-      </div>
-      <div className="cardSlot slotRightBottom">
-        {renderSlot(layout.slots.rightBottom, mediaLibrary)}
-      </div>
+
+      <Ticker />
     </div>
   );
 };

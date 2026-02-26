@@ -17,6 +17,16 @@ import Accounts from "../accounts/Accounts";
 import Contents, { type MediaItem as ContentsMediaItem } from "../contents/Contents";
 import Layouts, { type Layout, type MediaItem } from "../layouts/Layouts";
 
+// Default media items to use when no media has been added yet
+const DEFAULT_MEDIA: MediaItem[] = [
+  {
+    id: "demo_website",
+    type: "website",
+    title: "Example Website",
+    src: "https://example.com",
+  },
+];
+
 interface DashboardProps {
   onLogout: () => void;
 }
@@ -40,8 +50,8 @@ type Props = {
 const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) => {
   const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState(false);
-  const [activeLayout, setActiveLayout] = useState<Layout | null>(null);
-  const [allMedia, setAllMedia] = useState<MediaItem[]>([]);
+  const [_activeLayout, setActiveLayout] = useState<Layout | null>(null);
+  const [allMedia, setAllMedia] = useState<MediaItem[]>(DEFAULT_MEDIA);
 
   const [activeView, setActiveView] = useState<
     | "dashboard"

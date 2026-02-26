@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "/src/frontend/styles/layouts.css";
 import TopBar from "./TopBar";
 import Ticker from "./Ticker";
+import Stage from "./Stage";
 
 /** Keep types compatible with Contents.tsx */
 export type MediaType = "image" | "video" | "website" | "music";
@@ -17,6 +18,8 @@ export type WidgetKey = "scorecard" | "placeholder";
 
 export type SlotId = "hero" | "rightTop" | "rightBottom";
 
+type ResizeDir = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
 export type SlotContent =
   | { kind: "empty" }
   | { kind: "media"; mediaId: string }
@@ -26,9 +29,14 @@ export type Layout = {
   id: string;
   name: string;
   slots: Record<SlotId, SlotContent>;
-  // Optional editor metadata: the visual order of slots and per-slot sizes (percentages)
+  // Optional editor metadata: the visual order of slots
   slotOrder?: SlotId[];
-  slotSizes?: Record<SlotId, { width: number; height: number }>;
+
+  /**
+   * Optional editor metadata: draggable + resizable frame rectangles (percentages).
+   * Values are in [0..100], relative to the editor canvas.
+   */
+  slotFrames?: Record<SlotId, { x: number; y: number; w: number; h: number }>;
   createdAt: string;
   updatedAt: string;
 };
@@ -58,6 +66,13 @@ function defaultLayout(): Layout {
       hero: { kind: "empty" },
       rightTop: { kind: "empty" },
       rightBottom: { kind: "widget", widget: "scorecard" },
+    },
+    slotOrder: ["hero"],
+    slotFrames: {
+      // 16:9-ish composition: big hero left, 2 stacked right slots
+      hero: { x: 0, y: 0, w: 66.5, h: 100 },
+      rightTop: { x: 66.5, y: 0, w: 33.5, h: 50 },
+      rightBottom: { x: 66.5, y: 50, w: 33.5, h: 50 },
     },
     createdAt: t,
     updatedAt: t,
@@ -96,10 +111,18 @@ function labelFor(content: SlotContent, media: MediaItem[]) {
 }
 
 const SLOT_META: Record<SlotId, { title: string; subtitle: string }> = {
-  hero: { title: "Hero", subtitle: "Big left" },
-  rightTop: { title: "Right Top", subtitle: "Top right" },
-  rightBottom: { title: "Right Bottom", subtitle: "Bottom right" },
+  hero: { title: "Panel 1", subtitle: "Big left" },
+  rightTop: { title: "Panel 2", subtitle: "Top right" },
+  rightBottom: { title: "Panel 3", subtitle: "Bottom right" },
 };
+
+const SLOT_ORDER_ALL: SlotId[] = ["hero", "rightTop", "rightBottom"];
+const DEFAULT_FRAMES: Record<SlotId, { x: number; y: number; w: number; h: number }> = {
+  hero: { x: 0, y: 0, w: 66.5, h: 100 },
+  rightTop: { x: 66.5, y: 0, w: 33.5, h: 50 },
+  rightBottom: { x: 66.5, y: 50, w: 33.5, h: 50 },
+};
+
 
 const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome }) => {
   const [layouts, setLayouts] = useState<Layout[]>([]);
@@ -108,15 +131,66 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
 
   const [showEditor, setShowEditor] = useState(false);
   const [draft, setDraft] = useState<Layout | null>(null);
+  const [activeLayout, setActiveLayout] = useState<Layout | null>(null);
+
 
   // Editor state
   const [activeSlot, setActiveSlot] = useState<SlotId>("hero");
-  const [dragFrom, setDragFrom] = useState<SlotId | null>(null);
+  const [_dragFrom, setDragFrom] = useState<SlotId | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const interactionRef = useRef<
+    | null
+    | {
+        kind: "move" | "resize";
+        slot: SlotId;
+        startX: number;
+        startY: number;
+        startFrame: { x: number; y: number; w: number; h: number };
+        dir?: ResizeDir;
+      }
+  >(null);
 
   // Media picker state
   const [mediaTab, setMediaTab] = useState<"all" | MediaType>("all");
   const [mediaSearch, setMediaSearch] = useState("");
   const [pickerSlot, setPickerSlot] = useState<SlotId | null>(null);
+
+  const addSlot = () => {
+  if (!draft) return;
+  const { slotOrder, slotFrames } = ensureFrames(draft);
+  if (slotOrder.length >= 3) return; // no more slots available
+  const next = SLOT_ORDER_ALL.find((s) => !slotOrder.includes(s))!;
+  const newOrder = [...slotOrder, next];
+
+  const updatedFrames = { ...slotFrames };
+  if (slotOrder.length === 1) {
+    updatedFrames.hero ={ x: 0, y: 0, w: 66.5, h: 100 };
+  } 
+  updatedFrames[next] = DEFAULT_FRAMES[next];
+  setDraft({
+    ...draft,
+    slotOrder: newOrder,
+    slotFrames: updatedFrames,
+  });
+  setActiveSlot(next);
+};
+
+const removeSlot = () => {
+  if (!draft) return;
+  const { slotOrder, slotFrames } = ensureFrames(draft);
+  if (slotOrder.length <= 1) return;
+  const removed = slotOrder[slotOrder.length - 1];
+  const newOrder = slotOrder.slice(0, -1);
+
+  // When going back to 1 slot, restore hero to full canvas
+  const updatedFrames = { ...slotFrames };
+  if (newOrder.length === 1) {
+    updatedFrames.hero = { x: 0, y: 0, w: 100, h: 100 };
+  }
+
+  setDraft({ ...draft, slotOrder: newOrder, slotFrames: updatedFrames });
+  if (activeSlot === removed) setActiveSlot(newOrder[newOrder.length - 1]);
+}
 
   useEffect(() => {
     const loaded = loadLayouts();
@@ -161,6 +235,7 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
     setShowEditor(false);
     setDraft(null);
     setDragFrom(null);
+    interactionRef.current = null;
   };
 
   const saveDraft = () => {
@@ -211,16 +286,113 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
     });
   };
 
-  const quickSwapHeroRight = () => {
-    // If you want hero content to appear on the right, swap hero with rightTop.
-    // You can also swap with rightBottom. Up to you.
-    swapSlotContents("hero", "rightTop");
-    setActiveSlot("rightTop");
-  };
 
   const clearSlot = (slot: SlotId) => updateSlot(slot, { kind: "empty" });
 
-  const activeContent = draft?.slots[activeSlot] ?? { kind: "empty" as const };
+  const ensureFrames = (l: Layout): Required<Pick<Layout, "slotFrames" | "slotOrder">> => {
+    const slotOrder = l.slotOrder && l.slotOrder.length ? l.slotOrder : (["hero", "rightTop", "rightBottom"] as SlotId[]);
+    const slotFrames =
+      l.slotFrames ??
+      ({
+        hero: { x: 0, y: 0, w: 66.5, h: 100 },
+        rightTop: { x: 66.5, y: 0, w: 33.5, h: 50 },
+        rightBottom: { x: 66.5, y: 50, w: 33.5, h: 50 },
+      } as const);
+    return { slotOrder, slotFrames };
+  };
+
+  const clampFrame = (f: { x: number; y: number; w: number; h: number }) => {
+    const minW = 18;
+    const minH = 18;
+    let w = Math.max(minW, Math.min(100, f.w));
+    let h = Math.max(minH, Math.min(100, f.h));
+    let x = Math.max(0, Math.min(100 - w, f.x));
+    let y = Math.max(0, Math.min(100 - h, f.y));
+    return { x, y, w, h };
+  };
+
+  const setFrame = (slot: SlotId, nextFrame: { x: number; y: number; w: number; h: number }) => {
+    if (!draft) return;
+    const { slotFrames, slotOrder } = ensureFrames(draft);
+    setDraft({
+      ...draft,
+      slotOrder,
+      slotFrames: {
+        ...slotFrames,
+        [slot]: clampFrame(nextFrame),
+      },
+    });
+  };
+
+  const beginMove = (slot: SlotId, e: React.PointerEvent) => {
+    if (!draft) return;
+    const { slotFrames } = ensureFrames(draft);
+    const f = slotFrames[slot];
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    interactionRef.current = { kind: "move", slot, startX: e.clientX, startY: e.clientY, startFrame: { ...f } };
+  };
+
+  const beginResize = (slot: SlotId, dir: ResizeDir, e: React.PointerEvent) => {
+    if (!draft) return;
+    const { slotFrames } = ensureFrames(draft);
+    const f = slotFrames[slot];
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    interactionRef.current = {
+      kind: "resize",
+      slot,
+      dir,
+      startX: e.clientX,
+      startY: e.clientY,
+      startFrame: { ...f },
+    };
+  };
+
+  const onPointerMoveCanvas = (e: React.PointerEvent) => {
+    const ctx = interactionRef.current;
+    if (!ctx || !draft) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const dxPct = ((e.clientX - ctx.startX) / rect.width) * 100;
+    const dyPct = ((e.clientY - ctx.startY) / rect.height) * 100;
+
+    if (ctx.kind === "move") {
+      setFrame(ctx.slot, {
+        ...ctx.startFrame,
+        x: ctx.startFrame.x + dxPct,
+        y: ctx.startFrame.y + dyPct,
+      });
+    } else {
+      const dir = ctx.dir || "se";
+
+      let x = ctx.startFrame.x;
+      let y = ctx.startFrame.y;
+      let w = ctx.startFrame.w;
+      let h = ctx.startFrame.h;
+
+      if (dir.includes("e")) w = ctx.startFrame.w + dxPct;
+      if (dir.includes("s")) h = ctx.startFrame.h + dyPct;
+
+      if (dir.includes("w")) {
+        x = ctx.startFrame.x + dxPct;
+        w = ctx.startFrame.w - dxPct;
+      }
+
+      if (dir.includes("n")) {
+        y = ctx.startFrame.y + dyPct;
+        h = ctx.startFrame.h - dyPct;
+      }
+
+      setFrame(ctx.slot, { x, y, w, h });
+    }
+  };
+
+  const endPointer = () => {
+    interactionRef.current = null;
+  };
+
+  const _activeContent = draft?.slots[activeSlot] ?? { kind: "empty" as const };
 
   const filteredMedia = useMemo(() => {
     const q = mediaSearch.trim().toLowerCase();
@@ -237,6 +409,34 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
       );
     });
   }, [mediaLibrary, mediaTab, mediaSearch]);
+
+  if (activeLayout) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999 }}>
+      <Stage layout={activeLayout} mediaLibrary={mediaLibrary} />
+      <button
+        onClick={() => setActiveLayout(null)}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 16,
+          zIndex: 10000,
+          background: "rgba(0,0,0,0.55)",
+          color: "#fff",
+          border: "none",
+          borderRadius: 6,
+          padding: "6px 14px",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: 1,
+        }}
+      >
+        ✕ EXIT
+      </button>
+    </div>
+  );
+}
 
   return (
     <div className="layoutsPage">
@@ -292,9 +492,9 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
                   </div>
 
                   <div className="layoutRowChips">
-                    <span className="chip">Hero</span>
-                    <span className="chip">Right Top</span>
-                    <span className="chip">Right Bottom</span>
+                    <span className="chip">Panel 1</span>
+                    <span className="chip">Panel 2</span>
+                    <span className="chip">Panel 3</span>
                   </div>
                 </button>
               ))}
@@ -315,7 +515,7 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
               <LayoutPreview layout={selected} media={mediaLibrary} />
 
               <div className="rowActions">
-                <button className="btnPrimary" onClick={() => onUseLayout(selected)}>
+                <button className="btnPrimary" onClick={() => {onUseLayout(selected); setActiveLayout(selected);}}>
                   USE THIS LAYOUT
                 </button>
                 <button className="btnGhost" onClick={() => openEdit(selected)}>
@@ -351,39 +551,77 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
             <div className="editorFrameWithSidebar">
               {/* Left sidebar: slot controls only (media library removed as requested) */}
               <aside className="editorSidebar">
-                <div className="sidebarSection">
-                  <div className="sidebarTitle">Slots</div>
-                  {(draft.slotOrder || ["hero", "rightTop", "rightBottom"]).map((slotId) => (
-                    <div id={`slot-editor-${slotId}`} key={slotId} className="slotEditorCompact">
-                      <div className="slotEditorHeader">{SLOT_META[slotId].title}</div>
+  <div className="sidebarSection">
+    <div className="sidebarTitle">Panels</div>
 
-                      <div className="slotEditorBody">
-                        <div className="slotLabel">{labelFor(draft.slots[slotId], mediaLibrary)}</div>
+    {/* Slot count control */}
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 12,
+      padding: "6px 8px",
+      background: "#f5f5f5",
+      borderRadius: 6,
+    }}>
+      <button
+        className="btnGhost"
+        style={{ padding: "2px 10px", fontSize: 18, lineHeight: 1 }}
+        disabled={(draft.slotOrder ?? ["hero"]).length <= 1}
+        onClick={removeSlot}
+        title="Remove last panel"
+      >
+        −
+      </button>
 
-                        <div className="slotActions">
-                          <button
-                            className="btnGhost"
-                            onClick={() =>
-                              setDraft({ ...draft, slots: { ...draft.slots, [slotId]: { kind: "empty" } } })
-                            }
-                          >
-                            Clear
-                          </button>
-                          <button
-                            className="btnGhost"
-                            onClick={() => {
-                              const el = document.querySelector(`.canvasSlot[data-slot="${slotId}"]`);
-                              if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
-                            }}
-                          >
-                            Focus
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </aside>
+      <div style={{ flex: 1, textAlign: "center", fontSize: 13 }}>
+        <span style={{ fontWeight: 700, fontSize: 16 }}>
+          {(draft.slotOrder ?? ["hero"]).length}
+        </span>
+        <span style={{ color: "#888" }}> / 3 panels</span>
+      </div>
+
+      <button
+        className="btnGhost"
+        style={{ padding: "2px 10px", fontSize: 18, lineHeight: 1 }}
+        disabled={(draft.slotOrder ?? ["hero"]).length >= 3}
+        onClick={addSlot}
+        title="Add a panel"
+      >
+        ＋
+      </button>
+    </div>
+
+    {/* Existing slot list — unchanged */}
+    {(draft.slotOrder || ["hero", "rightTop", "rightBottom"]).map((slotId) => (
+      <div id={`slot-editor-${slotId}`} key={slotId} className="slotEditorCompact">
+        <div className="slotEditorHeader">{SLOT_META[slotId].title}</div>
+        <div className="slotEditorBody">
+          <div className="slotLabel">{labelFor(draft.slots[slotId], mediaLibrary)}</div>
+          <div className="slotActions">
+            <button
+              className="btnGhost"
+              onClick={() =>
+                setDraft({ ...draft, slots: { ...draft.slots, [slotId]: { kind: "empty" } } })
+              }
+            >
+              Clear
+            </button>
+            <button
+              className="btnGhost"
+              onClick={() => {
+                const el = document.querySelector(`.canvasSlot[data-slot="${slotId}"]`);
+                if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              Focus
+            </button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</aside>
 
               {/* Editor main area: TopBar (fixed), Canvas (droppable, scrollable), Ticker (fixed) */}
               <div className="editorMain">
@@ -395,36 +633,113 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
                   className="editorCanvasArea"
                   role="region"
                   aria-label="Layout canvas"
+                  ref={canvasRef}
+                  onPointerMove={onPointerMoveCanvas}
+                  onPointerUp={endPointer}
+                  onPointerCancel={endPointer}
                   onDragOver={(e) => e.preventDefault()}
                 >
-                  {(draft.slotOrder || ["hero", "rightTop", "rightBottom"]).map((slotId) => {
-                    const content = draft.slots[slotId];
-                    return (
-                      <div
-                        key={slotId}
-                        data-slot={slotId}
-                        className="canvasSlot"
-                        onClick={() => setPickerSlot(slotId)} // open file picker for this slot
-                        onDoubleClick={() => {
-                          const el = document.getElementById(`slot-editor-${slotId}`);
-                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }}
-                      >
-                        <div className="canvasSlotHeader">{SLOT_META[slotId].title}</div>
-                        <div className="canvasSlotBody">
-                          {content.kind === "media" ? (
-                            <img
-                              src={getMedia(mediaLibrary, (content as any).mediaId)?.src}
-                              alt={getMedia(mediaLibrary, (content as any).mediaId)?.title ?? ""}
-                              style={{ maxWidth: "100%", maxHeight: "100%" }}
-                            />
-                          ) : (
-                            <div className="canvasEmpty">Empty slot — click to choose media</div>
-                          )}
+                  {(() => {
+                    const { slotOrder, slotFrames } = ensureFrames(draft);
+                    return slotOrder.map((slotId) => {
+                      const content = draft.slots[slotId];
+                      const frame = slotFrames[slotId];
+
+                      return (
+                        <div
+                          key={slotId}
+                          data-slot={slotId}
+                          className={slotId === activeSlot ? "canvasFrame canvasFrameActive" : "canvasFrame"}
+                          style={{
+                            left: `${frame.x}%`,
+                            top: `${frame.y}%`,
+                            width: `${frame.w}%`,
+                            height: `${frame.h}%`,
+                          }}
+                          onClick={() => setActiveSlot(slotId)}
+                          onDoubleClick={() => {
+                            const el = document.getElementById(`slot-editor-${slotId}`);
+                            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const from = (e.dataTransfer.getData("text/slot") as SlotId) || null;
+                            if (!from || from === slotId) return;
+                            swapSlotContents(from, slotId);
+                            setDragFrom(null);
+                          }}
+                        >
+                          <div className="frameTitleBar" onPointerDown={(e) => beginMove(slotId, e)}>
+                            <div className="frameTitle">
+                              {SLOT_META[slotId].title}
+                              <span className="frameHint">drag to move</span>
+                            </div>
+
+                            <div className="frameActions" onPointerDown={(e) => e.stopPropagation()}>
+                              <button
+                                className="frameBtn"
+                                title="Swap contents: drag this onto another frame"
+                                draggable
+                                onDragStart={(e) => {
+                                  setDragFrom(slotId);
+                                  e.dataTransfer.setData("text/slot", slotId);
+                                  e.dataTransfer.effectAllowed = "move";
+                                }}
+                                onDragEnd={() => setDragFrom(null)}
+                              >
+                                ⇄
+                              </button>
+
+                              <button
+                                className="frameBtn"
+                                title="Choose media"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPickerSlot(slotId);
+                                }}
+                              >
+                                ＋
+                              </button>
+
+                              <button
+                                className="frameBtn"
+                                title="Clear"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearSlot(slotId);
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="frameBody">
+                            {content.kind === "media" ? (
+                              <img
+                                src={getMedia(mediaLibrary, (content as any).mediaId)?.src}
+                                alt={getMedia(mediaLibrary, (content as any).mediaId)?.title ?? ""}
+                                className="frameMedia"
+                              />
+                            ) : (
+                              <div className="canvasEmpty">Empty — click ＋ to choose media</div>
+                            )}
+                          </div>
+
+                          {/* Resize handles: corners + sides */}
+                          <div className="frameHandle frameHandle--n" onPointerDown={(e) => beginResize(slotId, "n", e)} />
+                          <div className="frameHandle frameHandle--s" onPointerDown={(e) => beginResize(slotId, "s", e)} />
+                          <div className="frameHandle frameHandle--e" onPointerDown={(e) => beginResize(slotId, "e", e)} />
+                          <div className="frameHandle frameHandle--w" onPointerDown={(e) => beginResize(slotId, "w", e)} />
+
+                          <div className="frameHandle frameHandle--nw" onPointerDown={(e) => beginResize(slotId, "nw", e)} />
+                          <div className="frameHandle frameHandle--ne" onPointerDown={(e) => beginResize(slotId, "ne", e)} />
+                          <div className="frameHandle frameHandle--sw" onPointerDown={(e) => beginResize(slotId, "sw", e)} />
+                          <div className="frameHandle frameHandle--se" onPointerDown={(e) => beginResize(slotId, "se", e)} />
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                   {/* Inline picker modal (uses uploaded Content list) */}
                   {pickerSlot && (
                     <div
@@ -519,11 +834,46 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
 };
 
 function LayoutPreview({ layout, media }: { layout: Layout; media: MediaItem[] }) {
+  const slotOrder: SlotId[] = layout.slotOrder?.length
+    ? layout.slotOrder
+    : ["hero", "rightTop", "rightBottom"];
+
+  const slotFrames: Record<SlotId, { x: number; y: number; w: number; h: number }> =
+    layout.slotFrames ?? {
+      hero: { x: 0, y: 0, w: 66.5, h: 100 },
+      rightTop: { x: 66.5, y: 0, w: 33.5, h: 50 },
+      rightBottom: { x: 66.5, y: 50, w: 33.5, h: 50 },
+    };
+
   return (
-    <div className="previewGrid">
-      <PreviewCard title="Hero" content={layout.slots.hero} media={media} big />
-      <PreviewCard title="Right Top" content={layout.slots.rightTop} media={media} />
-      <PreviewCard title="Right Bottom" content={layout.slots.rightBottom} media={media} />
+    <div className="previewGrid" style={{ position: "relative", width: "100%", aspectRatio: "16/9" }}>
+      {slotOrder.map((slotId) => {
+        const frame = slotFrames[slotId];
+        const content = layout.slots[slotId];
+        return (
+          <div
+            key={slotId}
+            style={{
+              position: "absolute",
+              left: `${frame.x}%`,
+              top: `${frame.y}%`,
+              width: `${frame.w}%`,
+              height: `${frame.h}%`,
+              boxSizing: "border-box",
+              border: "1px solid #ddd",
+              overflow: "hidden",
+            }}
+          >
+            <div className="pCardTop" style={{ padding: "4px 6px" }}>
+              <div className="pCardTitle">{SLOT_META[slotId].title}</div>
+              <div className="pCardLabel">{labelFor(content, media)}</div>
+            </div>
+            <div className="pCardBody" style={{ height: "calc(100% - 28px)" }}>
+              <MiniPreview content={content} media={media} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -566,14 +916,5 @@ function MiniPreview({ content, media }: { content: SlotContent; media: MediaIte
   return <div className="thumbPlaceholder">{m.type.toUpperCase()}: {m.title}</div>;
 }
 
-function MediaThumb({ media }: { media: MediaItem }) {
-  if (media.type === "image") return <img className="mediaThumb" src={media.src} alt={media.title} />;
-  if (media.type === "video") return <video className="mediaThumb" src={media.src} muted playsInline />;
-  return (
-    <div className="mediaThumbText">
-      <div className="mediaThumbType">{media.type.toUpperCase()}</div>
-    </div>
-  );
-}
 
 export default Layouts;
