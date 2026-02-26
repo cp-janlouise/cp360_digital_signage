@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -14,26 +7,256 @@ datasource db {
 }
 
 model Organization {
-  organization_id Int      @id @default(autoincrement())
+  organization_id Int              @id @default(autoincrement())
   name            String
   description     String?
-  created_at      DateTime @default(now())
-
-  // Relations
-  users     User[]
-  locations Location[]
+  created_at      DateTime         @default(now())
   layoutTemplates LayoutTemplate[]
-  media Media[]
-  playlists Playlist[]
+  locations       Location[]
+  media           Media[]
+  playlists       Playlist[]
+  users           User[]
+
+  @@map("Organization")
 }
 
 model Role {
   role_id     Int     @id @default(autoincrement())
   role_name   String  @unique
   description String?
+  users       User[]
+}
 
-  // Relations
-  users User[]
+model User {
+  user_id         Int          @id @default(autoincrement())
+  organization_id Int
+  role_id         Int
+  full_name       String       @db.VarChar(150)
+  email           String       @unique @db.VarChar(150)
+  password_hash   String
+  status          UserStatus   @default(active)
+  created_at      DateTime     @default(now()) @db.Timestamp(0)
+  updated_at      DateTime?    @db.Timestamp(0)
+  organization    Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  role            Role         @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Location {
+  location_id     Int          @id @default(autoincrement())
+  organization_id Int
+  name            String       @db.VarChar(150)
+  address         String?
+  created_at      DateTime     @default(now()) @db.Timestamp(0)
+  organization    Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  schedules       Schedule[]
+  screens         Screen[]
+
+  @@map("location")
+}
+
+model Screen {
+  screen_id           Int               @id @default(autoincrement())
+  location_id         Int
+  screen_name         String            @db.VarChar(150)
+  device_id           String            @unique @db.VarChar(150)
+  resolution_width    Int
+  resolution_height   Int
+  orientation         ScreenOrientation
+  status              ScreenStatus      @default(inactive)
+  paired_at           DateTime?         @db.Timestamp(0)
+  created_at          DateTime          @default(now()) @db.Timestamp(0)
+  deviceTokens        DeviceToken[]
+  screenHeartbeats    Heartbeat?
+  screenHeartbeatLogs HeartbeatLog[]
+  playbackLogs        PlaybackLog[]
+  schedules           Schedule[]
+  location            Location          @relation(fields: [location_id], references: [location_id], onDelete: Cascade)
+  screenLayouts       ScreenLayout[]
+
+  @@map("screen")
+}
+
+model LayoutTemplate {
+  template_id     Int            @id @default(autoincrement())
+  organization_id Int
+  name            String         @db.VarChar(150)
+  description     String?
+  created_at      DateTime       @default(now()) @db.Timestamp(0)
+  organization    Organization   @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  screenLayouts   ScreenLayout[]
+  templateZones   TemplateZone[]
+
+  @@unique([organization_id, name])
+  @@map("layout_template")
+}
+
+model TemplateZone {
+  template_zone_id Int            @id @default(autoincrement())
+  template_id      Int
+  name             String         @db.VarChar(150)
+  x_position       Int
+  y_position       Int
+  width            Int
+  height           Int
+  z_index          Int            @default(0)
+  template         LayoutTemplate @relation(fields: [template_id], references: [template_id], onDelete: Cascade)
+
+  @@unique([template_id, name])
+  @@map("template_zone")
+}
+
+model ScreenLayout {
+  layout_id         Int                @id @default(autoincrement())
+  screen_id         Int
+  template_id       Int?
+  name              String             @db.VarChar(150)
+  created_at        DateTime           @default(now()) @db.Timestamp(0)
+  screen            Screen             @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
+  template          LayoutTemplate?    @relation(fields: [template_id], references: [template_id])
+  screenLayoutZones ScreenLayoutZone[]
+
+  @@unique([screen_id, name])
+  @@map("screen_layout")
+}
+
+model ScreenLayoutZone {
+  zone_id       Int            @id @default(autoincrement())
+  layout_id     Int
+  name          String         @db.VarChar(150)
+  x_position    Int
+  y_position    Int
+  width         Int
+  height        Int
+  z_index       Int            @default(0)
+  playbackLogs  PlaybackLog[]
+  playlistItems PlaylistItem[]
+  layout        ScreenLayout   @relation(fields: [layout_id], references: [layout_id], onDelete: Cascade)
+
+  @@unique([layout_id, name])
+  @@map("screen_layout_zone")
+}
+
+model Media {
+  media_id          Int            @id @default(autoincrement())
+  organization_id   Int
+  title             String         @db.VarChar(255)
+  file_url          String
+  media_type        MediaType
+  duration          Int?
+  resolution_width  Int?
+  resolution_height Int?
+  created_at        DateTime       @default(now()) @db.Timestamp(0)
+  organization      Organization   @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  playbackLogs      PlaybackLog[]
+  playlistItems     PlaylistItem[]
+
+  @@map("media")
+}
+
+model Playlist {
+  playlist_id     Int            @id @default(autoincrement())
+  organization_id Int
+  name            String         @db.VarChar(150)
+  description     String?
+  created_at      DateTime       @default(now()) @db.Timestamp(0)
+  organization    Organization   @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  playlistItems   PlaylistItem[]
+  schedules       Schedule[]
+
+  @@unique([organization_id, name])
+  @@map("playlist")
+}
+
+model PlaylistItem {
+  playlist_item_id  Int               @id @default(autoincrement())
+  playlist_id       Int
+  media_id          Int
+  zone_id           Int?
+  display_order     Int
+  duration_override Int?
+  media             Media             @relation(fields: [media_id], references: [media_id])
+  playlist          Playlist          @relation(fields: [playlist_id], references: [playlist_id], onDelete: Cascade)
+  zone              ScreenLayoutZone? @relation(fields: [zone_id], references: [zone_id])
+
+  @@unique([playlist_id, display_order])
+  @@map("playlist_item")
+}
+
+model Schedule {
+  schedule_id     Int       @id @default(autoincrement())
+  playlist_id     Int
+  screen_id       Int?
+  location_id     Int?
+  start_time      DateTime
+  end_time        DateTime?
+  recurrence_rule String?
+  priority        Int       @default(0)
+  created_at      DateTime  @default(now()) @db.Timestamp(0)
+  location        Location? @relation(fields: [location_id], references: [location_id], onDelete: Cascade)
+  playlist        Playlist  @relation(fields: [playlist_id], references: [playlist_id], onDelete: Cascade)
+  screen          Screen?   @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
+
+  @@map("schedule")
+}
+
+model PairingCode {
+  pairing_code_id Int      @id @default(autoincrement())
+  code            String   @unique @db.VarChar(12)
+  device_id       String   @db.VarChar(255)
+  expires_at      DateTime
+  is_used         Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+
+  @@map("pairing_code")
+}
+
+model DeviceToken {
+  token_id   Int      @id @default(autoincrement())
+  screen_id  Int
+  token      String   @unique @db.VarChar(512)
+  issued_at  DateTime @default(now()) @db.Timestamp(0)
+  expires_at DateTime
+  screen     Screen   @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
+
+  @@map("device_token")
+}
+
+model Heartbeat {
+  heartbeat_id Int             @id @default(autoincrement())
+  screen_id    Int             @unique
+  last_seen    DateTime
+  status       HeartbeatStatus
+  screen       Screen          @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
+
+  @@map("heartbeat")
+}
+
+model HeartbeatLog {
+  id          Int             @id @default(autoincrement())
+  screen_id   Int
+  reported_at DateTime
+  status      HeartbeatStatus
+  screen      Screen          @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
+
+  @@map("heartbeat_log")
+}
+
+model PlaybackLog {
+  log_id          Int               @id @default(autoincrement())
+  screen_id       Int
+  media_id        Int
+  zone_id         Int?
+  played_at       DateTime
+  duration_played Int
+  status          PlaybackStatus
+  created_at      DateTime          @default(now()) @db.Timestamp(0)
+  media           Media             @relation(fields: [media_id], references: [media_id])
+  screen          Screen            @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
+  zone            ScreenLayoutZone? @relation(fields: [zone_id], references: [zone_id])
+
+  @@map("playback_log")
 }
 
 enum UserRole {
@@ -43,75 +266,10 @@ enum UserRole {
   auditor
 }
 
-model User {
-  user_id         Int @id @default(autoincrement())
-  organization_id Int
-  role_id         Int
-
-  full_name     String @db.VarChar(150)
-  email         String @unique @db.VarChar(150)
-  password_hash String @db.Text
-
-  status     UserStatus @default(active)
-  created_at DateTime   @default(now()) @db.Timestamp(0)
-  updated_at DateTime?  @db.Timestamp(0)
-
-  // Relations
-  organization Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
-  role         Role         @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
-
-  @@map("users")
-}
-
 enum UserStatus {
   active
   inactive
   suspended
-}
-
-model Location {
-  location_id     Int @id @default(autoincrement())
-  organization_id Int
-
-  name       String   @db.VarChar(150)
-  address    String?  @db.Text
-  created_at DateTime @default(now()) @db.Timestamp(0)
-
-  // Relations
-  organization Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
-  screens Screen[]
-  schedules Schedule[]
-
-  @@map("location")
-}
-
-model Screen {
-  screen_id         Int               @id @default(autoincrement())
-  location_id       Int
-
-  screen_name       String            @db.VarChar(150)
-  device_id         String            @unique @db.VarChar(150)
-
-  resolution_width  Int
-  resolution_height Int
-
-  orientation       ScreenOrientation
-  status            ScreenStatus      @default(inactive)
-
-  paired_at         DateTime?         @db.Timestamp(0)
-  created_at        DateTime          @default(now()) @db.Timestamp(0)
-
-  // Relations
-  location          Location @relation(fields: [location_id], references: [location_id],onDelete: Cascade)
-  screenLayouts     ScreenLayout[]
-  schedules         Schedule[]
-  deviceTokens      DeviceToken[]
-  screenHeartbeats   Heartbeat[]
-  screenHeartbeatLogs HeartbeatLog[]
-  playbackLogs     PlaybackLog[]
-
-
-  @@map("screen")
 }
 
 enum ScreenOrientation {
@@ -125,112 +283,6 @@ enum ScreenStatus {
   offline
 }
 
-model LayoutTemplate {
-  template_id     Int      @id @default(autoincrement())
-  organization_id Int
-
-  name            String   @db.VarChar(150)
-  description     String?  @db.Text
-  created_at      DateTime @default(now()) @db.Timestamp(0)
-
-  // Relations
-  organization    Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
-  templateZones   TemplateZone[]
-  screenLayouts   ScreenLayout[]
-
-// Composite Unique Constraint
-  @@unique([organization_id, name])
-
-  @@map("layout_template")
-}
-
-
-model TemplateZone {
-  template_zone_id Int  @id @default(autoincrement())
-  template_id      Int
-
-  name             String @db.VarChar(150)
-
-  x_position       Int
-  y_position       Int
-  width            Int
-  height           Int
-
-  z_index          Int    @default(0)
-
-  // Relations
-  template         LayoutTemplate @relation(fields: [template_id], references: [template_id], onDelete: Cascade)
-
-  // Composite Unique Constraint
-  @@unique([template_id, name])
-
-  @@map("template_zone")
-}
-
-model ScreenLayout {
-  layout_id   Int      @id @default(autoincrement())
-  screen_id   Int
-  template_id Int?
-
-  name        String   @db.VarChar(150)
-  created_at  DateTime @default(now()) @db.Timestamp(0)
-
-  // Relations
-  screen      Screen @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
-  template    LayoutTemplate? @relation(fields: [template_id], references: [template_id], onDelete: SetNull)
-  screenLayoutZones ScreenLayoutZone[]
-  // Composite Unique
-  @@unique([screen_id, name])
-
-  @@map("screen_layout")
-}
-
-model ScreenLayoutZone {
-  zone_id     Int  @id @default(autoincrement())
-  layout_id   Int
-
-  name        String @db.VarChar(150)
-
-  x_position  Int
-  y_position  Int
-  width       Int
-  height      Int
-
-  z_index     Int @default(0)
-
-  // Relations
-  layout      ScreenLayout @relation(fields: [layout_id], references: [layout_id], onDelete: Cascade)
-  playlistItems PlaylistItem[]
-  playbackLogs     PlaybackLog[]
-
-  @@unique([layout_id, name])
-
-  @@map("screen_layout_zone")
-}
-
-model Media {
-  media_id         Int         @id @default(autoincrement())
-  organization_id  Int
-
-  title            String      @db.VarChar(255)
-  file_url         String      @db.Text
-
-  media_type       MediaType
-  duration         Int?        // in seconds, NULL for images
-
-  resolution_width Int?
-  resolution_height Int?
-
-  created_at       DateTime    @default(now()) @db.Timestamp(0)
-
-  // Relations
-  organization     Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
-  playlistItems    PlaylistItem[]
-  playbackLogs     PlaybackLog[]
-
-  @@map("media")
-}
-
 enum MediaType {
   image
   video
@@ -238,143 +290,10 @@ enum MediaType {
   web
 }
 
-model Playlist {
-  playlist_id     Int          @id @default(autoincrement())
-  organization_id Int
-
-  name            String       @db.VarChar(150)
-  description     String?      @db.Text
-  created_at      DateTime     @default(now()) @db.Timestamp(0)
-
-  // Relations
-  organization    Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
-  playlistItems   PlaylistItem[]
-  schedules       Schedule[]
-
-  // Composite Unique Constraint
-  @@unique([organization_id, name])
-
-  @@map("playlist")
-}
-
-model PlaylistItem {
-  playlist_item_id  Int  @id @default(autoincrement())
-  playlist_id       Int
-  media_id          Int
-  zone_id           Int? // optional, supports multi-zone layouts
-
-  display_order     Int
-  duration_override Int? // optional, overrides media duration
-
-  // Relations
-  playlist          Playlist        @relation(fields: [playlist_id], references: [playlist_id], onDelete: Cascade)
-  media             Media           @relation(fields: [media_id], references: [media_id], onDelete: Restrict)
-  zone              ScreenLayoutZone? @relation(fields: [zone_id], references: [zone_id], onDelete: SetNull)
-
-  // Composite Unique Constraint
-  @@unique([playlist_id, display_order])
-
-  @@map("playlist_item")
-}
-
-model Schedule {
-  schedule_id     Int       @id @default(autoincrement())
-
-  playlist_id     Int
-  screen_id       Int?      // optional, can schedule per screen
-  location_id     Int?      // optional, can schedule per location
-
-  start_time      DateTime
-  end_time        DateTime?
-
-  recurrence_rule String?   @db.Text
-  priority        Int       @default(0)
-  created_at      DateTime  @default(now()) @db.Timestamp(0)
-
-  // Relations
-  playlist        Playlist  @relation(fields: [playlist_id], references: [playlist_id], onDelete: Cascade)
-  screen          Screen?   @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
-  location        Location? @relation(fields: [location_id], references: [location_id], onDelete: Cascade)
-
-  @@map("schedule")
-}
-
-model PairingCode {
-  pairing_code_id Int      @id @default(autoincrement())
-
-  code            String   @db.VarChar(12) @unique
-  device_id       String   @db.VarChar(255)
-
-  expires_at      DateTime
-  is_used         Boolean  @default(false)
-  created_at      DateTime @default(now()) @db.Timestamp(0)
-
-  @@map("pairing_code")
-}
-
-model DeviceToken {
-  token_id   Int      @id @default(autoincrement())
-  screen_id  Int
-  token      String   @db.VarChar(512) @unique
-
-  issued_at  DateTime @default(now()) @db.Timestamp(0)
-  expires_at DateTime
-
-  // Relation
-  screen     Screen   @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
-
-  @@map("device_token")
-}
-
-model Heartbeat {
-  heartbeat_id  Int             @id @default(autoincrement())
-  screen_id     Int             @unique
-  last_seen     DateTime
-  status        HeartbeatStatus
-
-  // Relation
-  screen        Screen          @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
-
-  @@map("heartbeat")
-}
-
 enum HeartbeatStatus {
   online
   offline
   error
-}
-
-model HeartbeatLog {
-  id          Int             @id @default(autoincrement())
-  screen_id   Int
-  reported_at DateTime
-  status      HeartbeatStatus
-
-  // Relation
-  screen      Screen          @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
-
-  @@map("heartbeat_log")
-}
-
-model PlaybackLog {
-  log_id          Int               @id @default(autoincrement())
-  screen_id       Int
-  media_id        Int
-  zone_id         Int?              // optional, supports multi-zone layouts
-
-  played_at       DateTime
-  duration_played Int
-
-  status          PlaybackStatus
-
-  created_at      DateTime          @default(now()) @db.Timestamp(0)
-
-  // Relations
-  screen          Screen            @relation(fields: [screen_id], references: [screen_id], onDelete: Cascade)
-  media           Media             @relation(fields: [media_id], references: [media_id], onDelete: Restrict)
-  zone            ScreenLayoutZone? @relation(fields: [zone_id], references: [zone_id], onDelete: SetNull)
-
-  @@map("playback_log")
 }
 
 enum PlaybackStatus {

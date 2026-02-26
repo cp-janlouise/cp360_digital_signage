@@ -1,0 +1,13 @@
+#Dependencies
+node_modules/
+
+#Build output
+dist/
+server/dist/
+
+#Prisma
+prisma/migrations/
+
+#Environment 
+.env
+.env.*

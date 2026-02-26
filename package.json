@@ -2,16 +2,23 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "prisma": "^7.4.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix client\" \"npm run start:dev --prefix server\""
+    "dev": "concurrently -n CLIENT,SERVER -c blue,green \"npm run dev --prefix client\" \"npm run start:dev --prefix server\""
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/interaction": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
+    "@nestjs/common": "^11.1.14",
+    "@nestjs/config": "^4.0.3",
+    "@nestjs/mapped-types": "^2.1.0",
+    "@prisma/client": "^7.4.1",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "class-transformer": "^0.5.1",
