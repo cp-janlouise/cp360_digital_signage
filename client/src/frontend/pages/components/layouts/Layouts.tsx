@@ -61,7 +61,7 @@ function defaultLayout(): Layout {
   const t = nowISO();
   return {
     id: uid(),
-    name: "Untitled Layout",
+    name: "",
     slots: {
       hero: { kind: "empty" },
       rightTop: { kind: "empty" },
@@ -123,6 +123,7 @@ const DEFAULT_FRAMES: Record<SlotId, { x: number; y: number; w: number; h: numbe
   rightBottom: { x: 66.5, y: 50, w: 33.5, h: 50 },
 };
 
+const RESERVED_NAME = "untitled layout";
 
 const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome }) => {
   const [layouts, setLayouts] = useState<Layout[]>([]);
@@ -154,6 +155,9 @@ const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome })
   const [mediaTab, setMediaTab] = useState<"all" | MediaType>("all");
   const [mediaSearch, setMediaSearch] = useState("");
   const [pickerSlot, setPickerSlot] = useState<SlotId | null>(null);
+
+  // Track whether the name field has been touched (for inline error display)
+  const [nameTouched, setNameTouched] = useState(false);
 
   const addSlot = () => {
   if (!draft) return;
@@ -218,6 +222,7 @@ const removeSlot = () => {
     setActiveSlot("hero");
     setMediaTab("all");
     setMediaSearch("");
+    setNameTouched(false);
     setShowEditor(true);
   };
 
@@ -228,6 +233,7 @@ const removeSlot = () => {
     setActiveSlot("hero");
     setMediaTab("all");
     setMediaSearch("");
+    setNameTouched(false);
     setShowEditor(true);
   };
 
@@ -235,15 +241,32 @@ const removeSlot = () => {
     setShowEditor(false);
     setDraft(null);
     setDragFrom(null);
+    setNameTouched(false);
     interactionRef.current = null;
+  };
+
+  /** Returns a validation error string, or null if the name is valid. */
+  const getNameError = (name: string, currentId: string): string | null => {
+    const trimmed = name.trim();
+    if (!trimmed) return "Please enter a layout name.";
+    if (trimmed.toLowerCase() === RESERVED_NAME) {
+      return 'Please rename your layout — "Untitled Layout" is not allowed.';
+    }
+    const isDuplicate = layouts.some(
+      (l) => l.name.toLowerCase() === trimmed.toLowerCase() && l.id !== currentId
+    );
+    if (isDuplicate) return "A layout with this name already exists. Please use a unique name.";
+    return null;
   };
 
   const saveDraft = () => {
     if (!draft) return;
-    const name = draft.name.trim();
-    if (!name) return alert("Please enter a layout name.");
+    setNameTouched(true);
 
-    const updated: Layout = { ...draft, name, updatedAt: nowISO() };
+    const error = getNameError(draft.name, draft.id);
+    if (error) return alert(error);
+
+    const updated: Layout = { ...draft, name: draft.name.trim(), updatedAt: nowISO() };
 
     setLayouts((prev) => {
       const idx = prev.findIndex((p) => p.id === updated.id);
@@ -392,7 +415,6 @@ const removeSlot = () => {
     interactionRef.current = null;
   };
 
-  const _activeContent = draft?.slots[activeSlot] ?? { kind: "empty" as const };
 
   const filteredMedia = useMemo(() => {
     const q = mediaSearch.trim().toLowerCase();
@@ -438,6 +460,9 @@ const removeSlot = () => {
   );
 }
 
+  // Compute inline name error for the editor (only shown after user touches the field)
+  const nameError = draft && nameTouched ? getNameError(draft.name, draft.id) : null;
+
   return (
     <div className="layoutsPage">
       <div className="layoutsHeader">
@@ -449,7 +474,7 @@ const removeSlot = () => {
           <div>
             <div className="layoutsH1">Layouts</div>
             <div className="layoutsSub">
-              Tip: drag a slot onto another to swap what they display. Your Hero can “teleport” right. ✨
+              Tip: drag a slot onto another to swap what they display. Your Hero can "teleport" right. ✨
             </div>
           </div>
         </div>
@@ -536,12 +561,30 @@ const removeSlot = () => {
             <div className="modalTitle">Layout Editor</div>
 
             <label className="field">
-              <div className="label">Layout name</div>
+              <div className="label">
+                Layout name{" "}
+                <span style={{ color: "#e53e3e", fontSize: 12 }}>* required, must be unique</span>
+              </div>
               <input
                 className="input"
                 value={draft.name}
-                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                onChange={(e) => {
+                  setNameTouched(true);
+                  setDraft({ ...draft, name: e.target.value });
+                }}
+                onBlur={() => setNameTouched(true)}
+                style={
+                  nameError
+                    ? { borderColor: "#e53e3e", outline: "none", boxShadow: "0 0 0 2px rgba(229,62,62,0.2)" }
+                    : undefined
+                }
+                placeholder='Untitled Layout'
               />
+              {nameError && (
+                <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>
+                  ⚠ {nameError}
+                </div>
+              )}
             </label>
 
             <div className="editorHint">
@@ -675,7 +718,9 @@ const removeSlot = () => {
                               <span className="frameHint">drag to move</span>
                             </div>
 
-                            <div className="frameActions" onPointerDown={(e) => e.stopPropagation()}>
+                            <div className="frameActions" 
+                            //onPointerDown={(e) => e.stopPropagation()}
+                            >
                               <button
                                 className="frameBtn"
                                 title="Swap contents: drag this onto another frame"
@@ -819,9 +864,7 @@ const removeSlot = () => {
               </button>
               <button
                 className="btnPrimary"
-                onClick={() => {
-                  saveDraft();
-                }}
+                onClick={saveDraft}
               >
                 Save Layout
               </button>

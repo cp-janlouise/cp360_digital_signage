@@ -116,6 +116,7 @@
   cursor: pointer;
   transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
   
+  
 }
 
 .btnPrimary:active,
@@ -141,6 +142,9 @@
 .btnGhost {
   background: var(--panel-2);
   color: var(--text);
+    height: auto;
+
+
 }
 
 .btnGhost:hover {
@@ -1255,4 +1259,105 @@
   .frameHandle--ne,
   .frameHandle--sw,
   .frameHandle--se { width: 26px; height: 26px; }
+}
+
+
+.playlistPanel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.playlistHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.playlistTitle { font-weight: 800; }
+.playlistSub { opacity: 0.7; font-size: 12px; margin-top: 4px; }
+
+.playlistRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.playlistSlots {
+  display: grid;
+  gap: 10px;
+}
+
+.playlistSlotCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fafafa;
+}
+
+.playlistSlotTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.playlistSlotName {
+  font-weight: 800;
+  text-transform: none;
+}
+
+.playlistItems {
+  display: grid;
+  gap: 8px;
+}
+
+.playlistItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+}
+
+.playlistItemTitle { font-weight: 800; }
+.playlistItemMeta { opacity: 0.7; font-size: 12px; margin-top: 2px; }
+
+.playlistItemControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emptyMini {
+  opacity: 0.75;
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+.durLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.durInput {
+  width: 90px;
+  height: 34px;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 0 10px;
+  outline: none;
 }
