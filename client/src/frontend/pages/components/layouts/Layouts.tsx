@@ -65,7 +65,7 @@ function defaultLayout(): Layout {
     slots: {
       hero: { kind: "empty" },
       rightTop: { kind: "empty" },
-      rightBottom: { kind: "widget", widget: "scorecard" },
+      rightBottom: { kind: "empty" },
     },
     slotOrder: ["hero"],
     slotFrames: {
@@ -414,7 +414,6 @@ const removeSlot = () => {
   const endPointer = () => {
     interactionRef.current = null;
   };
-
 
   const filteredMedia = useMemo(() => {
     const q = mediaSearch.trim().toLowerCase();

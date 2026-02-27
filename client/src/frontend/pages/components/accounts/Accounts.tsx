@@ -11,8 +11,8 @@ type UserItem = {
 };
 
 type Props = {
-  activeTab: "manageUsers" | "manageOrganizations" | "accounts";
-  onNavigate: (view: "dashboard" | "accounts" | "manageUsers" | "manageOrganizations") => void;
+  activeTab: "manageUsers" | "manageOrganizations" | "accounts" | "manageLocations";
+  onNavigate: (view: "dashboard" | "accounts" | "manageUsers" | "manageOrganizations" | "manageLocations") => void;
 };
 
 const Accounts: React.FC<Props> = ({ activeTab, onNavigate }) => {
@@ -95,6 +95,11 @@ const Accounts: React.FC<Props> = ({ activeTab, onNavigate }) => {
           <button className="accountChoiceCard" onClick={() => onNavigate("manageOrganizations")}>
             <h3>Manage Organizations</h3>
             <p>View and manage organizations.</p>
+          </button>
+
+          <button className="accountChoiceCard" onClick={() => onNavigate("manageLocations")}>
+            <h3>Manage Locations</h3>
+            <p>View and manage locations.</p>
           </button>
         </div>
       )}
@@ -237,6 +242,28 @@ const Accounts: React.FC<Props> = ({ activeTab, onNavigate }) => {
           </div>
         <div className="viewPage">
           <h2>No organizations yet.</h2>
+        </div>
+        </div>
+      )}
+
+      {activeTab === "manageLocations" && (
+        <div className="ManageUsersHome">
+          <div className="topRow">
+            <h1 className="manageUserTitle">Manage Locations</h1>
+            <div className="topActions">
+              <input
+                className="searchInput"
+                placeholder="Search location title or name"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
+                 <button className="addUserBtn" onClick={openAddUserModal}>
+                + ADD A LOCATION
+              </button>
+            </div>
+          </div>
+        <div className="viewPage">
+          <h2>No locations yet.</h2>
         </div>
         </div>
       )}
