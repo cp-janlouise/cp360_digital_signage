@@ -635,3 +635,23 @@
   font-size: 12px;
   opacity: 0.7;
 }
+
+#editRole {
+  border: transparent;
+  font-size: 14px;
+  background-color: rgba(255, 255, 255, 0.80);
+  padding: 12px;
+  border-radius: 14px;
+  width: 100%;
+  outline: none;
+}
+
+#editOrg {
+   border: transparent;
+  font-size: 14px;
+  background-color: rgba(255, 255, 255, 0.80);
+  padding: 12px;
+  border-radius: 14px;
+  width: 100%;
+  outline: none;
+}
