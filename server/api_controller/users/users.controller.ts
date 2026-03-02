@@ -3,7 +3,7 @@ import { UsersService } from '../../api_service/users/users.service.js';
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) {}
+    constructor(private readonly usersService: UsersService) { }
 
     @Post()
     create(@Body() body: { email: string; name?: string }) {

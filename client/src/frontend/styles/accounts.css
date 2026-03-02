@@ -1,171 +1,637 @@
+/*
+  Accounts / Manage Users / Manage Organizations / Manage Locations
+  Styling goal: mimic the reference UI's main content area (soft card surface,
+  pill search, separated row "cards"), while keeping your existing blue theme.
+*/
 
-.modalOverlay{
+:root {
+  --cp-blue: #05154e;        /* theme base */
+  --cp-blue-2: #1e2a96;      /* primary button */
+  --cp-ink: #0f172a;         /* main text */
+  --cp-muted: rgba(15, 23, 42, 0.65);
+  --cp-bg: #f3f2ee;          /* main area background */
+  --cp-surface: #fbfaf6;     /* main content surface */
+  --cp-card: #ffffff;        /* row cards */
+  --cp-border: rgba(15, 23, 42, 0.10);
+  --cp-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --cp-shadow-sm: 0 10px 26px rgba(15, 23, 42, 0.06);
+  --cp-radius: 22px;
+  --cp-radius-sm: 14px;
+}
+
+/* ---------- Page containers ---------- */
+.accountsHome {
+  width: 100%;
+  min-height: 100vh;
+  padding: 22px 26px;
+  background: var(--cp-bg);
+  color: var(--cp-ink);
+}
+
+.accountsTab {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ManageUsersHome {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.viewPage {
+  margin-top: 14px;
+  background: var(--cp-surface);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--cp-radius);
+  padding: 18px;
+  box-shadow: var(--cp-shadow-sm);
+  width: 100%;
+}
+
+/* ---------- Top row: back/home + title + actions ---------- */
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.accountsPageTitle {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: var(--cp-ink);
+}
+
+.manageUserTitle {
+  font-size: 30px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.backBtn,
+.homeButton {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--cp-ink);
+  padding: 9px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.backBtn:hover,
+.homeButton:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- Search (pill) ---------- */
+.searchInput {
+  height: 42px;
+  min-width: 260px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.85);
+  outline: none;
+  color: var(--cp-ink);
+}
+
+.searchInput::placeholder {
+  color: rgba(15, 23, 42, 0.45);
+}
+
+.searchInput:focus {
+  border-color: rgba(30, 42, 150, 0.55);
+  box-shadow: 0 0 0 4px rgba(30, 42, 150, 0.12);
+}
+
+/* ---------- Primary action button ---------- */
+.addUserBtn {
+  border: none;
+  background: var(--cp-blue);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(5, 21, 78, 0.18);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.addUserBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(5, 21, 78, 0.20);
+}
+
+.addUserBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------- Accounts landing cards ---------- */
+.accountHead {
+  font-size: 40px;
+  justify-content: center;
+  font-weight: 800;
+  padding-bottom: 70px;
+  text-align: center;
+}
+
+.accountCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 1500px;
+  margin: 40px auto 0 auto; 
+}
+
+@media (min-width: 1060px) {
+  .accountCardsGrid {
+    grid-template-columns: repeat(3, minmax(420px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .accountsHome {
+    padding: 18px 14px;
+  }
+  .accountCardsGrid {
+    grid-template-columns: 1fr;
+    margin-top: 40px;
+  }
+}
+
+.accountChoiceCard {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 22px;
+  background: var(--cp-blue);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  color: #fff;
+  box-shadow: 0 16px 38px rgba(5, 21, 78, 0.20);
+}
+
+.accountChoiceCard:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 22px 46px rgba(160, 172, 214, 0.24);
+  background-color: rgb(12, 26, 158);
+}
+
+
+
+.accountChoiceCard h3 {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+}
+
+.accountChoiceCard p {
+  margin: 0;
+  opacity: 0.92;
+}
+
+/* ---------- Tables rendered like "card rows" ---------- */
+.usersTableWrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.usersTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px; /* space between row cards */
+}
+
+.usersTable thead th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(15, 23, 42, 0.55);
+  font-weight: 700;
+  padding: 6px 14px;
+  border: none;
+}
+
+.usersTable tbody tr {
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.usersTable tbody td {
+  padding: 14px;
+  border: none;
+  vertical-align: middle;
+}
+
+/* rounded row card corners */
+.usersTable tbody tr td:first-child {
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+.usersTable tbody tr td:last-child {
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+/* subtle hover like the reference */
+.usersTable tbody tr:hover {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
+}
+
+/* ---------- Status chips (fallback) ---------- */
+.statusActive {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(38, 196, 133, 0.14);
+  color: #0f766e;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.statusInactive {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(251, 113, 133, 0.14);
+  color: #9f1239;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* ---------- Toggle (kept from your version, tuned to fit light rows) ---------- */
+.statusToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  user-select: none;
+  font: inherit;
+}
+
+.statusToggle__track {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  position: relative;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.06);
+  flex: 0 0 auto;
+}
+
+.statusToggle__thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 3px;
+  background: rgba(15, 23, 42, 0.82);
+  transition: left 140ms ease;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.20);
+}
+
+.statusToggle--on .statusToggle__track {
+  background: rgba(38, 196, 133, 0.18);
+  border-color: rgba(38, 196, 133, 0.35);
+}
+
+.statusToggle--on .statusToggle__thumb {
+  left: 22px;
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.statusToggle__text {
+  font-size: 13px;
+  opacity: 0.9;
+  min-width: 58px;
+  text-align: left;
+  color: var(--cp-ink);
+}
+
+.statusToggle--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.statusToggle:disabled {
+  pointer-events: none;
+}
+
+.statusLockHint {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 6px;
+  color: var(--cp-muted);
+}
+
+/* ---------- Modal (kept, adjusted to match new surface) ---------- */
+.modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
 }
 
-.modalCard{
-  width: min(520px, 92vw);
-  background: #fff;
-  border-radius: 12px;
+.modalCard {
+  width: min(560px, 92vw);
+  background: var(--cp-surface);
+  border-radius: var(--cp-radius);
   padding: 18px;
-  box-shadow: 0 10px 30px rgba(156, 152, 152, 0.25);
-  justify-content: center;
+  box-shadow: var(--cp-shadow);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
-.modalHeader{
+.modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
-
 }
 
-.modalTitle{
+.modalTitle {
   margin: 0;
   font-size: 20px;
-    font-weight: 600;
+  font-weight: 800;
+  color: var(--cp-ink);
 }
 
-.modalCloseBtn{
+.modalCloseBtn {
   border: none;
   background: transparent;
   font-size: 18px;
   cursor: pointer;
-
+  color: rgba(15, 23, 42, 0.7);
 }
+
 .modalBody {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-left: 5%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-left: 0;
 }
 
-.modalBody .inputGroupUsername, .modalBody .inputGroupEmail, .modalBody .inputGroupRole {
-   border-color: #555;
+.modalBody label {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.60);
+}
+
+/* input group wrappers from your markup */
+.modalBody .inputGroupUsername,
+.modalBody .inputGroupEmail,
+.modalBody .inputGroupRole,
+.modalBody .inputGroupOrganization,
+.modalBody .inputGroupLocation,
+.modalBody .inputGroupStatus {
+  border: 1px solid rgba(15, 23, 42, 0.14);
   font-size: 14px;
-  background-color: #c0bbbb;
+  background-color: rgba(255, 255, 255, 0.80);
   padding: 12px;
-  border-radius: 12px;
-  width: 400px;
-  outline:#555;
-  padding-top: 3%;
-  /* border-top: 50%; */
-  margin-left: auto;
-  margin-right: auto;
-  /* margin-top: 20px; */
-  
-}
-.input, #username, #email, #role {
-    border: transparent;
-    background-color: transparent;
-    width: 100%;
-    outline: transparent;
-    color: #555;
-
+  border-radius: 14px;
+  width: 100%;
+  outline: none;
 }
 
-.input ,#role {
-    color: #555;
-    width: 100%;
-    outline: transparent;
+/* actual inputs/selects */
+.input,
+#username,
+#email,
+#role,
+#organization,
+#location,
+#status {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  color: var(--cp-ink);
 }
-.modalFooter{
+
+.modalFooter {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 14px;
-  outline: transparent;
 }
 
-.cancelBtn{
-  border: 1px solid #ccc;
-  background: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-.saveUserBtn{
-  border: none;
-  background: #1e2a96;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.usersTableWrap{
-  width: 100%;
-  overflow: auto;
-}
-
-.usersTable{
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.usersTable th, .usersTable td{
-  padding: 10px 12px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-}
-
-
-.accountCardsGrid{
-  display: grid;
-  grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 50px;
-  margin-top: 100px;
-  width: 1000px;
-}
-
-.accountChoiceCard{
-  border: 1px solid #e6e6e6;
+.cancelBtn {
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 9px 14px;
   border-radius: 12px;
-  padding: 18px;
-  background: #05154e;
-  text-align: left;
   cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.cancelBtn:hover {
+  background: #fff;
+}
+
+.saveUserBtn {
+  border: none;
+  background: var(--cp-blue-2);
   color: #fff;
+  padding: 9px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(30, 42, 150, 0.20);
 }
 
-.accountChoiceCard:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+.saveUserBtn:hover {
+  box-shadow: 0 16px 34px rgba(30, 42, 150, 0.24);
 }
 
-.accountChoiceCard h3{
-  margin: 0 0 8px 0;
+/* Filters bar (Role + Organization) */
+.filtersBar {
+  margin: 14px 0 18px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
 }
 
-.accountChoiceCard p{
-  margin: 0;
-  color: #ffffff;
+.filtersLeft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.manageUserTitle {
-    font-size: 30px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    align-items: center;
-    justify-content: center;
+.filterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
-.screensTitle, .contentsTitle, .layoutsTitle {
-    text-indent: -1400px;
-}
-.accountsPageTitle {
-    text-indent:-1400px;
+.filterLabel {
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
-.layoutsTitle {
-    text-indent: -1400px; }
- /* .campaignsTitle {
-     text-indent: -1400px;
- } */
+.filterSelect {
+  border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  padding: 2px 2px;
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.filtersRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filtersCount {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.filtersClearBtn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.filtersClearBtn:hover {
+  transform: translateY(-1px);
+}
+
+.filtersClearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* Actions column */
+.actionsCol {
+  width: 220px;
+  text-align: right;
+}
+
+.actionsCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.iconBtn {
+  height: 34px;
+  width: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  color: inherit;
+}
+
+.iconBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.iconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Simple key-value grid in View modal */
+.kvGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kv {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.70);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.kv span {
+  display: block;
+  font-size: 12px;
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+
+.kv b {
+  display: block;
+  font-size: 14px;
+}
+
+/* Responsive modal grid */
+@media (max-width: 720px) {
+  .kvGrid {
+    grid-template-columns: 1fr;
+  }
+  .actionsCol {
+    width: 180px;
+  }
+}
+
+.editUserTop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.editUserName {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.editUserEmail {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.editHint {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.7;
+}
