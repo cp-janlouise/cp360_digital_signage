@@ -4,6 +4,8 @@ import ManageLocations from "./Locations";
 import ManageUsers from "./Users";
 import '/src/frontend/styles/organizations.css';
 import '/src/frontend/styles/locations.css';
+import SystemHealth from "./SystemHealth";
+
 
 type Props = {
   activeTab: "manageUsers" | "manageOrganizations" | "accounts" | "manageLocations";

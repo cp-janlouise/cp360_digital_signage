@@ -29,8 +29,6 @@ type SelectBaseProps = {
   className?: string;
 };
 
-
-
 const SelectInput: React.FC<SelectBaseProps> = ({
   id,
   value,
@@ -83,8 +81,6 @@ const StatusToggle: React.FC<StatusToggleProps> = ({
   );
 };
 
-
-
 // Simple inline SVG icons (no extra deps)
 const Icon = {
   view: (
@@ -111,33 +107,17 @@ const Icon = {
       />
     </svg>
   ),
-//   screens: (
-//     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-//       <path
-//         fill="currentColor"
-//         d="M4 5h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l1 2h2v2H7v-2h2l1-2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v8h16V7H4Z"
-//       />
-//     </svg>
-//   ),
-//   playlist: (
-//     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-//       <path
-//         fill="currentColor"
-//         d="M4 6h14v2H4V6Zm0 4h14v2H4v-2Zm0 4h10v2H4v-2Zm16-3v6.2a2.8 2.8 0 1 1-2-2.7V10h2Z"
-//       />
-//     </svg>
-//   ),
-
-
 };
 
 const ManageUsers: React.FC<Props> = ({ onBack }) => {
+  // Your "protected" user id
   const currentUserId = "superadmin-1";
+
+  // You currently hardcode this, keeping it.
   const isSuperAdmin = true;
 
   const [users, setUsers] = useState<UserItem[]>(() => getUsers());
   const [userSearch, setUserSearch] = useState("");
- 
 
   const [orgs, setOrgs] = useState<OrganizationItem[]>(() => getOrganizations());
 
@@ -156,7 +136,7 @@ const ManageUsers: React.FC<Props> = ({ onBack }) => {
       username: "Super Admin",
       email: "superadmin@local.dev",
       role: "admin",
-      organization_id: orgs[0]?.organization_id ?? "",
+      organization_id: "Admin",
       status: "active",
       createdAt: new Date().toISOString(),
     });
@@ -170,7 +150,13 @@ const ManageUsers: React.FC<Props> = ({ onBack }) => {
 
   const orgById = useMemo(() => {
     const map = new Map<string, OrganizationItem>();
-    for (const o of orgs) map.set(o.organization_id, o);
+    // FIX: your original used o.organization_id as key but typed orgs as OrganizationItem.
+    // Most stores use `id`, but your UI uses `organization_id` elsewhere.
+    // So: support both safely.
+    for (const o of orgs as any[]) {
+      const key = o.organization_id ?? o.id;
+      if (key) map.set(key, o as OrganizationItem);
+    }
     return map;
   }, [orgs]);
 
@@ -193,20 +179,22 @@ const ManageUsers: React.FC<Props> = ({ onBack }) => {
   // Lightweight modals for actions
   const [viewUser, setViewUser] = useState<UserItem | null>(null);
   const [editUser, setEditUser] = useState<UserItem | null>(null);
-  
 
-  const [editDraft, setEditDraft] = useState<{ role: Role; organization_id: string } | null>(null);
+  // ✅ Keep draft non-null only when modal is open
+  const [editDraft, setEditDraft] = useState<{ role: Role; organization_id: string } | null>(
+    null
+  );
 
-useEffect(() => {
-  if (!editUser) {
-    setEditDraft(null);
-    return;
-  }
-  setEditDraft({
-    role: editUser.role,
-    organization_id: editUser.organization_id,
-  });
-}, [editUser]);
+  useEffect(() => {
+    if (!editUser) {
+      setEditDraft(null);
+      return;
+    }
+    setEditDraft({
+      role: editUser.role,
+      organization_id: editUser.organization_id,
+    });
+  }, [editUser]);
 
   const openAddUserModal = () => setShowAddUser(true);
 
@@ -248,7 +236,7 @@ useEffect(() => {
   };
 
   const setUserStatus = (userId: string, status: "active" | "inactive") => {
-    updateUser(userId, {status}  );
+    updateUser(userId, { status });
   };
 
   const clearFilters = () => {
@@ -276,17 +264,20 @@ useEffect(() => {
     });
   }, [users, userSearch, orgById, roleFilter, orgFilter]);
 
-  const activeFiltersCount =
-    (roleFilter !== "all" ? 1 : 0) + (orgFilter !== "all" ? 1 : 0);
+  const activeFiltersCount = (roleFilter !== "all" ? 1 : 0) + (orgFilter !== "all" ? 1 : 0);
 
   const handleDelete = (u: UserItem) => {
+    // ✅ Protect SuperAdmin row from deletion
     if (u.id === currentUserId) return;
+
     const ok = confirm(`Delete user "${u.username}"?`);
     if (!ok) return;
+
     deleteUser(u.id);
   };
 
-
+  // ✅ Centralized "protected row" logic
+  const isProtectedRow = (u: UserItem) => u.id === currentUserId;
 
   return (
     <div className="ManageUsersHome">
@@ -334,8 +325,8 @@ useEffect(() => {
               onChange={(e) => setOrgFilter(e.target.value)}
             >
               <option value="all">All</option>
-              {orgs.map((o) => (
-                <option key={o.organization_id} value={o.organization_id}>
+              {orgs.map((o: any) => (
+                <option key={o.organization_id ?? o.id} value={o.organization_id ?? o.id}>
                   {o.name}
                 </option>
               ))}
@@ -344,9 +335,7 @@ useEffect(() => {
         </div>
 
         <div className="filtersRight">
-          {activeFiltersCount > 0 && (
-            <span className="filtersCount">{activeFiltersCount} filter(s)</span>
-          )}
+          {activeFiltersCount > 0 && <span className="filtersCount">{activeFiltersCount} filter(s)</span>}
           <button
             type="button"
             className="filtersClearBtn"
@@ -379,7 +368,11 @@ useEffect(() => {
               <tbody>
                 {filteredUsers.map((u) => {
                   const isSelf = u.id === currentUserId;
+                  const protectedRow = isProtectedRow(u);
+
+                  // Your current rule: superadmin can toggle others, but not self
                   const canToggle = isSuperAdmin && !isSelf;
+
                   const orgName = orgById.get(u.organization_id)?.name ?? "—";
 
                   return (
@@ -433,8 +426,17 @@ useEffect(() => {
                         <button
                           className="iconBtn"
                           type="button"
-                          title="Edit"
-                          onClick={() => setEditUser(u)}
+                          title={protectedRow ? "Super Admin cannot be edited" : "Edit"}
+                          onClick={() => {
+                            if (protectedRow) return;
+                            setEditUser(u);
+                          }}
+                          disabled={protectedRow}
+                          style={
+                            protectedRow
+                              ? { opacity: 0.4, cursor: "not-allowed" }
+                              : undefined
+                          }
                         >
                           {Icon.edit}
                         </button>
@@ -442,14 +444,17 @@ useEffect(() => {
                         <button
                           className="iconBtn"
                           type="button"
-                          title={isSelf ? "You can't delete yourself" : "Delete"}
+                          title={protectedRow ? "Super Admin cannot be deleted" : "Delete"}
                           onClick={() => handleDelete(u)}
-                          disabled={isSelf}
+                          disabled={protectedRow}
+                          style={
+                            protectedRow
+                              ? { opacity: 0.4, cursor: "not-allowed" }
+                              : undefined
+                          }
                         >
                           {Icon.trash}
                         </button>
-
-                        
                       </td>
                     </tr>
                   );
@@ -512,13 +517,11 @@ useEffect(() => {
                 <SelectInput
                   id="organization"
                   value={newUser.organization_id}
-                  onChange={(e) =>
-                    setNewUser((p) => ({ ...p, organization_id: e.target.value }))
-                  }
+                  onChange={(e) => setNewUser((p) => ({ ...p, organization_id: e.target.value }))}
                   placeholder={orgs.length ? "SELECT ORGANIZATION" : "ADD ORGS FIRST"}
                 >
-                  {orgs.map((o) => (
-                    <option key={o.organization_id} value={o.organization_id}>
+                  {orgs.map((o: any) => (
+                    <option key={o.organization_id ?? o.id} value={o.organization_id ?? o.id}>
                       {o.name}
                     </option>
                   ))}
@@ -568,107 +571,126 @@ useEffect(() => {
             </div>
             <div className="modalBody">
               <div className="kvGrid">
-                <div className="kv"><span>Username</span><b>{viewUser.username}</b></div>
-                <div className="kv"><span>Email</span><b>{viewUser.email}</b></div>
-                <div className="kv"><span>Role</span><b>{viewUser.role}</b></div>
-                <div className="kv"><span>Organization</span><b>{orgById.get(viewUser.organization_id)?.name ?? "—"}</b></div>
-                <div className="kv"><span>Status</span><b>{viewUser.status}</b></div>
-                <div className="kv"><span>Created</span><b>{new Date(viewUser.createdAt).toLocaleString()}</b></div>
+                <div className="kv">
+                  <span>Username</span>
+                  <b>{viewUser.username}</b>
+                </div>
+                <div className="kv">
+                  <span>Email</span>
+                  <b>{viewUser.email}</b>
+                </div>
+                <div className="kv">
+                  <span>Role</span>
+                  <b>{viewUser.role}</b>
+                </div>
+                <div className="kv">
+                  <span>Organization</span>
+                  <b>{orgById.get(viewUser.organization_id)?.name ?? "—"}</b>
+                </div>
+                <div className="kv">
+                  <span>Status</span>
+                  <b>{viewUser.status}</b>
+                </div>
+                <div className="kv">
+                  <span>Created</span>
+                  <b>{new Date(viewUser.createdAt).toLocaleString()}</b>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit modal placeholder (UI only for now) */}
+      {/* Edit modal */}
       {editUser && editDraft && (
-  <div className="modalOverlay" onClick={() => setEditUser(null)}>
-    <div className="modalCard" onClick={(e) => e.stopPropagation()}>
-      <div className="modalHeader">
-        <h2 className="modalTitle">EDIT USER</h2>
-        <button
-          className="modalCloseBtn"
-          onClick={() => setEditUser(null)}
-          type="button"
-        >
-          ✕
-        </button>
-      </div>
+        <div className="modalOverlay" onClick={() => setEditUser(null)}>
+          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h2 className="modalTitle">EDIT USER</h2>
+              <button className="modalCloseBtn" onClick={() => setEditUser(null)} type="button">
+                ✕
+              </button>
+            </div>
 
-      <div className="modalBody">
-        <div className="editUserTop">
-          <div className="editUserName">{editUser.username}</div>
-          <div className="editUserEmail">{editUser.email}</div>
+            <div className="modalBody">
+              <div className="editUserTop">
+                <div className="editUserName">{editUser.username}</div>
+                <div className="editUserEmail">{editUser.email}</div>
+              </div>
+
+              <label htmlFor="editRole">Role</label>
+              <div className="inputGroupRole">
+                <select
+                  id="editRole"
+                  value={editDraft.role}
+                  onChange={(e) =>
+                    setEditDraft((p) => (p ? { ...p, role: e.target.value as Role } : p))
+                  }
+                  required
+                >
+                  <option value="admin">ADMIN</option>
+                  <option value="tLeader">TEAM LEADER</option>
+                </select>
+              </div>
+
+              <label htmlFor="editOrg">Organization</label>
+              <div className="inputGroupOrganization">
+                <select
+                  id="editOrg"
+                  value={editDraft.organization_id}
+                  onChange={(e) =>
+                    setEditDraft((p) => (p ? { ...p, organization_id: e.target.value } : p))
+                  }
+                  required
+                >
+                  <option value="" disabled>
+                    SELECT ORGANIZATION
+                  </option>
+                  {orgs.map((o: any) => (
+                    <option key={o.organization_id ?? o.id} value={o.organization_id ?? o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modalFooter">
+                <button type="button" className="cancelBtn" onClick={() => setEditUser(null)}>
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="saveUserBtn"
+                  onClick={() => {
+                    // ✅ Double-safety: even if somehow opened, block edit on protected row
+                    if (editUser.id === currentUserId) {
+                      alert("Super Admin cannot be edited.");
+                      return;
+                    }
+
+                    if (!editDraft.organization_id) {
+                      alert("Please select an organization.");
+                      return;
+                    }
+
+                    updateUser(editUser.id, {
+                      role: editDraft.role,
+                      organization_id: editDraft.organization_id,
+                    });
+
+                    setEditUser(null);
+                  }}
+                >
+                  Save Changes
+                </button>
+              </div>
+
+              <div className="editHint">Only role and organization can be changed here.</div>
+            </div>
+          </div>
         </div>
-
-        <label htmlFor="editRole">Role</label>
-        <div className="inputGroupRole">
-          <select
-            id="editRole"
-            value={editDraft.role}
-            onChange={(e) =>
-              setEditDraft((p) => (p ? { ...p, role: e.target.value as Role } : p))
-            }
-            required
-          >
-            <option value="admin">ADMIN</option>
-            <option value="tLeader">TEAM LEADER</option>
-          </select>
-        </div>
-
-        <label htmlFor="editOrg">Organization</label>
-        <div className="inputGroupOrganization">
-          <select
-            id="editOrg"
-            value={editDraft.organization_id}
-            onChange={(e) =>
-              setEditDraft((p) => (p ? { ...p, organization_id: e.target.value } : p))
-            }
-            required
-          >
-            <option value="" disabled>
-              SELECT ORGANIZATION
-            </option>
-            {orgs.map((o) => (
-              <option key={o.organization_id} value={o.organization_id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="modalFooter">
-          <button type="button" className="cancelBtn" onClick={() => setEditUser(null)}>
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            className="saveUserBtn"
-            onClick={() => {
-              if (!editDraft.organization_id) {
-                alert("Please select an organization.");
-                return;
-              }
-              updateUser(editUser.id, {
-                role: editDraft.role,
-                organization_id: editDraft.organization_id,
-              });
-              setEditUser(null);
-            }}
-          >
-            Save Changes
-          </button>
-        </div>
-
-        <div className="editHint">
-          Only role and organization can be changed here.
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
+      )}
     </div>
   );
 };
