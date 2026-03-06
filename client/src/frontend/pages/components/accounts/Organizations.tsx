@@ -254,35 +254,32 @@ const ManageOrganizations: React.FC<Props> = ({ onBack }) => {
       {/* ── VIEW ORGANIZATION MODAL ───────────────────────────────────────── */}
       {viewOrg && (
         <div className="modalOverlay" onClick={() => setViewOrg(null)}>
-          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+          <div className="modalCard modalCard--user" onClick={(e) => e.stopPropagation()}>
             <div className="modalHeader">
               <h2 className="modalTitle">VIEW ORGANIZATION</h2>
-              <button
-                className="modalCloseBtn"
-                onClick={() => setViewOrg(null)}
-                type="button"
-              >
-                ✕
-              </button>
+              <button className="modalCloseBtn" onClick={() => setViewOrg(null)} type="button">✕</button>
             </div>
-            <div className="modalBody">
+            <div className="modalScrollBody">
+              {/* Info card */}
+              <div className="userInfoCard">
+                <div className="userAvatar">
+                  {viewOrg.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="userInfoMain">
+                  <div className="userInfoName">{viewOrg.name}</div>
+                  <div className="userInfoEmail">{viewOrg.description || "No description"}</div>
+                </div>
+                <div className="userInfoMeta">
+                  <div className="userInfoMetaLabel">Created</div>
+                  <div className="userInfoMetaValue">{new Date(viewOrg.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              {/* Detail rows */}
               <div className="kvGrid">
-                <div className="kv">
-                  <span>Organization ID</span>
-                  <b>{viewOrg.organization_id}</b>
-                </div>
-                <div className="kv">
-                  <span>Name</span>
-                  <b>{viewOrg.name}</b>
-                </div>
-                <div className="kv">
-                  <span>Description</span>
-                  <b>{viewOrg.description || "—"}</b>
-                </div>
-                <div className="kv">
-                  <span>Created</span>
-                  <b>{new Date(viewOrg.created_at).toLocaleString()}</b>
-                </div>
+                <div className="kv"><span>Organization ID</span><b>{viewOrg.organization_id}</b></div>
+                <div className="kv"><span>Name</span><b>{viewOrg.name}</b></div>
+                <div className="kv"><span>Description</span><b>{viewOrg.description || "—"}</b></div>
+                <div className="kv"><span>Created</span><b>{new Date(viewOrg.created_at).toLocaleString()}</b></div>
               </div>
             </div>
           </div>

@@ -379,35 +379,37 @@ const ManageLocations: React.FC<Props> = ({ onBack }) => {
       {/* ── VIEW LOCATION MODAL ────────────────────────────────────────────── */}
       {viewLocation && (
         <div className="modalOverlay" onClick={() => setViewLocation(null)}>
-          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+          <div className="modalCard modalCard--user" onClick={(e) => e.stopPropagation()}>
             <div className="modalHeader">
               <h2 className="modalTitle">VIEW LOCATION</h2>
-              <button
-                className="modalCloseBtn"
-                onClick={() => setViewLocation(null)}
-                type="button"
-              >
-                ✕
-              </button>
+              <button className="modalCloseBtn" onClick={() => setViewLocation(null)} type="button">✕</button>
             </div>
-            <div className="modalBody">
+            <div className="modalScrollBody">
+              {/* Info card */}
+              <div className="userInfoCard">
+                <div className="userAvatar">
+                  {viewLocation.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="userInfoMain">
+                  <div className="userInfoName">{viewLocation.name}</div>
+                  <div className="userInfoEmail">{viewLocation.address || "No address"}</div>
+                  <div className="userInfoBadges">
+                    <span className="statusBadge statusBadge--active">
+                      📍 {orgById.get(viewLocation.organization_id)?.name ?? "—"}
+                    </span>
+                  </div>
+                </div>
+                <div className="userInfoMeta">
+                  <div className="userInfoMetaLabel">Created</div>
+                  <div className="userInfoMetaValue">{new Date(viewLocation.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              {/* Detail rows */}
               <div className="kvGrid">
-                <div className="kv">
-                  <span>Name</span>
-                  <b>{viewLocation.name}</b>
-                </div>
-                <div className="kv">
-                  <span>Address</span>
-                  <b>{viewLocation.address || "—"}</b>
-                </div>
-                <div className="kv">
-                  <span>Organization</span>
-                  <b>{orgById.get(viewLocation.organization_id)?.name ?? "—"}</b>
-                </div>
-                <div className="kv">
-                  <span>Created</span>
-                  <b>{new Date(viewLocation.created_at).toLocaleString()}</b>
-                </div>
+                <div className="kv"><span>Name</span><b>{viewLocation.name}</b></div>
+                <div className="kv"><span>Address</span><b>{viewLocation.address || "—"}</b></div>
+                <div className="kv"><span>Organization</span><b>{orgById.get(viewLocation.organization_id)?.name ?? "—"}</b></div>
+                <div className="kv"><span>Created</span><b>{new Date(viewLocation.created_at).toLocaleString()}</b></div>
               </div>
             </div>
           </div>

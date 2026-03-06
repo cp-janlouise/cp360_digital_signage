@@ -439,7 +439,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
             </div>
 
             {/* Permission summary card */}
-            <div style={{
+            {/* <div style={{
               margin: "24px 0 0",
               padding: "16px 20px",
               background: "#f8fafc",
@@ -467,7 +467,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
                     </span>
                   ))}
               </div>
-            </div>
+            </div> */}
 
             <div className="calendarSection">
               <h2 className="calendarTitle">Schedules:</h2>
