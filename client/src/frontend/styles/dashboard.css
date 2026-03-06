@@ -234,7 +234,7 @@
 .userButton {
     background:transparent; 
     border:none; color:#fff; 
-    text-align:left; 
+    text-align:center; 
     padding:12px 16px; 
     font-weight:700; 
     cursor:pointer; 
@@ -250,8 +250,8 @@
 }
 
 .bi-person-circle {
-    font-size: 30px;
-    margin-right: 25px;
+   
+    
 }
 
 .bi-grid {

@@ -127,55 +127,140 @@ const ReadOnlyBanner: React.FC = () => {
   );
 };
 
-// ── Read-Only Wrapper ────────────────────────────────────────────────────────
-// Blocks ALL clicks/interactions inside child components when readOnly=true.
-// No need to modify each child component individually.
-const ReadOnlyWrapper: React.FC<{ readOnly: boolean; children: React.ReactNode }> = ({
-  readOnly,
-  children,
-}) => {
-  if (!readOnly) return <>{children}</>;
+// ── Permission Wrapper ───────────────────────────────────────────────────────
+// Two modes:
+//   fullBlock  = viewer: transparent overlay blocks every interaction
+//   cssBlock   = admin/contentManager: injects CSS to hide specific action
+//                buttons (delete, deactivate) they don't have rights for
+//
+// Uses attribute selectors on title/aria-label so no child component changes needed.
 
-  return (
-    <div style={{ position: "relative" }}>
-      {children}
-      {/* Transparent intercept layer — catches all pointer events */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 50,
-          cursor: "not-allowed",
-          background: "transparent",
-        }}
-        title="You have read-only access and cannot make changes."
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      />
-      {/* Floating badge so user knows why nothing works */}
-      <div style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        zIndex: 100,
-        background: "#1e293b",
-        color: "#fbbf24",
-        padding: "10px 16px",
-        borderRadius: "10px",
-        fontSize: "12px",
-        fontWeight: 600,
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-        pointerEvents: "none",
-      }}>
-        <i className="bi bi-lock-fill" />
-        Read-Only — changes are disabled for your role
+interface PermissionWrapperProps {
+  children: React.ReactNode;
+  canCreate:     boolean;
+  canEdit:       boolean;
+  canDelete:     boolean;
+  // optional extras used by screens
+  canDeactivate?: boolean;
+  canPair?:       boolean;
+}
+
+const PermissionWrapper: React.FC<PermissionWrapperProps> = ({
+  children,
+  canCreate,
+  canEdit,
+  canDelete,
+  canDeactivate = canDelete,
+  canPair = canCreate,
+}) => {
+  const fullBlock = !canCreate && !canEdit && !canDelete;
+
+  // Build scoped CSS rules for actions this role cannot perform
+  const blockedCss: string[] = [];
+
+  if (!canDelete) {
+    // Hide buttons whose title or aria-label contains "delete" (case-insensitive)
+    blockedCss.push(`
+      .cp-perm-scope button[title*="elete"],
+      .cp-perm-scope button[title*="emove"],
+      .cp-perm-scope button[aria-label*="elete"],
+      .cp-perm-scope button[aria-label*="emove"] {
+        display: none !important;
+      }
+    `);
+  }
+
+  if (!canEdit) {
+    blockedCss.push(`
+      .cp-perm-scope button[title*="dit"],
+      .cp-perm-scope button[aria-label*="dit"] {
+        display: none !important;
+      }
+    `);
+  }
+
+  if (!canCreate) {
+    // Hide add/create/upload buttons — common patterns
+    blockedCss.push(`
+      .cp-perm-scope button[title*="dd"],
+      .cp-perm-scope button[title*="reate"],
+      .cp-perm-scope button[title*="pload"],
+      .cp-perm-scope button[title*="ew "],
+      .cp-perm-scope [class*="addBtn"],
+      .cp-perm-scope [class*="createBtn"],
+      .cp-perm-scope [class*="uploadBtn"],
+      .cp-perm-scope [class*="addUser"],
+      .cp-perm-scope [class*="AddBtn"] {
+        display: none !important;
+      }
+    `);
+  }
+
+  if (!canDeactivate) {
+    blockedCss.push(`
+      .cp-perm-scope button[title*="eactivate"],
+      .cp-perm-scope button[aria-label*="eactivate"] {
+        display: none !important;
+      }
+    `);
+  }
+
+  if (!canPair) {
+    blockedCss.push(`
+      .cp-perm-scope button[title*="air"],
+      .cp-perm-scope button[aria-label*="air"] {
+        display: none !important;
+      }
+    `);
+  }
+
+  if (fullBlock) {
+    // Full overlay for viewer — blocks everything
+    return (
+      <div style={{ position: "relative" }}>
+        {blockedCss.length > 0 && <style>{blockedCss.join("")}</style>}
+        <div className="cp-perm-scope">{children}</div>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 50,
+            cursor: "not-allowed",
+            background: "transparent",
+          }}
+          title="You have read-only access and cannot make changes."
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        />
+        <div style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          zIndex: 100,
+          background: "#1e293b",
+          color: "#fbbf24",
+          padding: "10px 16px",
+          borderRadius: "10px",
+          fontSize: "12px",
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          pointerEvents: "none",
+        }}>
+          <i className="bi bi-lock-fill" />
+          Read-Only — changes are disabled for your role
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  // Partial block — inject CSS only, no overlay
+  return (
+    <>
+      {blockedCss.length > 0 && <style>{blockedCss.join("")}</style>}
+      <div className="cp-perm-scope">{children}</div>
+    </>
   );
 };
 
@@ -214,10 +299,11 @@ const RoleBadge: React.FC<{ role: Role }> = ({ role }) => {
       color,
       padding: "2px 10px",
       borderRadius: "999px",
-      fontSize: "11px",
+      fontSize: "18px",
       fontWeight: 700,
       letterSpacing: "0.5px",
       textTransform: "uppercase",
+      alignContent: "center"
     }}>
       {ROLE_LABELS[role]}
     </span>
@@ -409,25 +495,39 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
       case "campaigns":
         return can("canViewCampaigns")
           ? (
-            <ReadOnlyWrapper readOnly={!can("canCreateCampaign")}>
+            <PermissionWrapper
+              canCreate={can("canCreateCampaign")}
+              canEdit={can("canEditCampaign")}
+              canDelete={can("canDeleteCampaign")}
+            >
               <Campaigns playlists={playlistRefs} onNavigateHome={handleHome} />
-            </ReadOnlyWrapper>
+            </PermissionWrapper>
           )
           : <AccessDenied message="You don't have permission to view Campaigns." />;
 
       case "screens":
         return can("canViewScreens")
           ? (
-            <ReadOnlyWrapper readOnly={!can("canCreateScreen")}>
+            <PermissionWrapper
+              canCreate={can("canCreateScreen")}
+              canEdit={can("canEditScreen")}
+              canDelete={can("canDeleteScreen")}
+              canDeactivate={can("canDeactivateScreen")}
+              canPair={can("canPairScreen")}
+            >
               <Screens campaigns={campaignRefs} onNavigateHome={handleHome} />
-            </ReadOnlyWrapper>
+            </PermissionWrapper>
           )
           : <AccessDenied message="You don't have permission to view Screens." />;
 
       case "contents":
         return can("canViewContents")
           ? (
-            <ReadOnlyWrapper readOnly={!can("canUploadContent")}>
+            <PermissionWrapper
+              canCreate={can("canUploadContent")}
+              canEdit={can("canEditContent")}
+              canDelete={can("canDeleteContent")}
+            >
               <Contents
                 initialTab="all"
                 onNavigate={(view) => setActiveView(view as any)}
@@ -435,25 +535,26 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
                   setAllMedia(items.map((m) => ({ id: m.id, type: m.type as any, title: m.title, src: m.src })));
                 }}
               />
-            </ReadOnlyWrapper>
+            </PermissionWrapper>
           )
           : <AccessDenied message="You don't have permission to view Contents." />;
 
       case "playlists":
+        // Playlists.tsx self-manages permissions — no PermissionWrapper needed.
         return can("canViewPlaylists")
-          ? (
-            <ReadOnlyWrapper readOnly={!can("canCreatePlaylist")}>
-              <Playlists mediaLibrary={allMedia} onNavigateHome={handleHome} />
-            </ReadOnlyWrapper>
-          )
+          ? <Playlists mediaLibrary={allMedia} onNavigateHome={handleHome} />
           : <AccessDenied message="You don't have permission to view Playlists." />;
 
       case "layouts":
         return can("canViewLayouts")
           ? (
-            <ReadOnlyWrapper readOnly={!can("canCreateLayout")}>
+            <PermissionWrapper
+              canCreate={can("canCreateLayout")}
+              canEdit={can("canEditLayout")}
+              canDelete={can("canDeleteLayout")}
+            >
               <Layouts mediaLibrary={allMedia} onUseLayout={(layout) => setActiveLayout(layout)} onNavigateHome={handleHome} />
-            </ReadOnlyWrapper>
+            </PermissionWrapper>
           )
           : <AccessDenied message="You don't have permission to view Layouts." />;
 
@@ -628,7 +729,7 @@ const Dashboard: React.FC<DashboardProps & Props> = ({ onLogout, onNavigate }) =
           className={`navItem ${activeView === "user" ? "active" : ""}`}
           onClick={() => navigate("user")}
         >
-          <i className="bi bi-person-circle" /> <span className="userSize">USER</span>
+           <RoleBadge role={role} />
         </button>
 
         <div className="sidebarBottom">

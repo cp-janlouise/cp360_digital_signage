@@ -20,7 +20,7 @@ import {
 
 // ── Permissions ───────────────────────────────────────────────────────────────
 import { usePermissions } from "../security/permissionContext";
-import { type Role, ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_PERMISSIONS } from "../security//rolesConfig";
+import { type Role, ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_PERMISSIONS, type Permission  } from "../security/rolesConfig";
 
 // Use the 4 canonical roles from rolesConfig
 type UserRole = Role; // "superAdmin" | "admin" | "contentManager" | "viewer"
@@ -99,6 +99,169 @@ const RolePill: React.FC<{ role: UserRole }> = ({ role }) => {
   );
 };
 
+
+// ── PermissionsCard ───────────────────────────────────────────────────────────
+type PermGroup = {
+  label: string;
+  icon: string;
+  color: string;
+  bg: string;
+  border: string;
+  keys: (keyof Permission)[];
+};
+
+const PermissionsCard: React.FC<{
+  userPerms: Permission;
+  groups: PermGroup[];
+}> = ({ userPerms, groups }) => {
+  const [open, setOpen] = React.useState(false);
+
+  const totalGranted = Object.values(userPerms).filter(Boolean).length;
+  const totalPerms   = Object.values(userPerms).length;
+
+  return (
+    <div style={{
+      border: "1px solid #e2e8f0",
+      borderRadius: "12px",
+      overflow: "hidden",
+    }}>
+      {/* Collapsible header */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 18px",
+          background: open ? "#f8fafc" : "#fff",
+          border: "none",
+          cursor: "pointer",
+          borderBottom: open ? "1px solid #e2e8f0" : "none",
+          transition: "background 0.2s",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{
+            width: "32px", height: "32px",
+            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            borderRadius: "8px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <i className="bi bi-shield-check" style={{ color: "#fff", fontSize: "14px" }} />
+          </span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontWeight: 700, fontSize: "14px", color: "#111827" }}>
+              Permissions for this role
+            </div>
+            <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "1px" }}>
+              {totalGranted} of {totalPerms} permissions granted
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* Progress bar */}
+          <div style={{
+            width: "80px", height: "6px",
+            background: "#e5e7eb", borderRadius: "999px", overflow: "hidden",
+          }}>
+            <div style={{
+              height: "100%",
+              width: `${Math.round((totalGranted / totalPerms) * 100)}%`,
+              background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
+              borderRadius: "999px",
+              transition: "width 0.4s",
+            }} />
+          </div>
+          <i
+            className={`bi bi-chevron-${open ? "up" : "down"}`}
+            style={{ color: "#9ca3af", fontSize: "12px" }}
+          />
+        </div>
+      </button>
+
+      {/* Expandable body */}
+      {open && (
+        <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          {groups.map((g) => {
+            const granted = g.keys.filter((k) => userPerms[k]);
+            const denied  = g.keys.filter((k) => !userPerms[k]);
+            if (g.keys.length === 0) return null;
+
+            return (
+              <div key={g.label} style={{
+                background: g.bg,
+                border: `1px solid ${g.border}`,
+                borderRadius: "10px",
+                padding: "12px 14px",
+              }}>
+                {/* Group header */}
+                <div style={{
+                  display: "flex", alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "10px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <i className={`bi ${g.icon}`} style={{ color: g.color, fontSize: "13px" }} />
+                    <span style={{ fontWeight: 700, fontSize: "12px", color: g.color }}>
+                      {g.label.toUpperCase()}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: "11px",
+                    color: g.color,
+                    fontWeight: 600,
+                    opacity: 0.7,
+                  }}>
+                    {granted.length}/{g.keys.length}
+                  </span>
+                </div>
+
+                {/* Permission pills */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                  {granted.map((k) => (
+                    <span key={k} style={{
+                      display: "inline-flex", alignItems: "center", gap: "4px",
+                      background: "#fff",
+                      border: `1px solid ${g.border}`,
+                      color: g.color,
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                    }}>
+                      <i className="bi bi-check-circle-fill" style={{ fontSize: "10px", color: "#22c55e" }} />
+                      {k.replace(/^can/, "").replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                  ))}
+                  {denied.map((k) => (
+                    <span key={k} style={{
+                      display: "inline-flex", alignItems: "center", gap: "4px",
+                      background: "rgba(255,255,255,0.4)",
+                      border: "1px solid #e5e7eb",
+                      color: "#9ca3af",
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      textDecoration: "line-through",
+                      opacity: 0.6,
+                    }}>
+                      <i className="bi bi-x-circle-fill" style={{ fontSize: "10px", color: "#f87171" }} />
+                      {k.replace(/^can/, "").replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── ManageUsers ───────────────────────────────────────────────────────────────
 const ManageUsers: React.FC<Props> = ({ onBack }) => {
   const currentUserId = "superadmin-1";
@@ -133,7 +296,7 @@ const ManageUsers: React.FC<Props> = ({ onBack }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgs]);
 
-useEffect(() => {
+  useEffect(() => {
   const unsub = subscribeOrganizations(() => setOrgs(getOrganizations()));
   return () => {
     if (typeof unsub === "function") unsub();
@@ -146,6 +309,8 @@ useEffect(() => {
     if (typeof unsub === "function") unsub();
   };
 }, []);
+
+  
 
   const orgById = useMemo(() => {
     const map = new Map<string, OrganizationItem>();
@@ -262,8 +427,6 @@ useEffect(() => {
   };
 
   const setUserStatus = (userId: string, status: "active" | "inactive") => updateUser(userId, { status });
-
-  
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -475,53 +638,121 @@ useEffect(() => {
       )}
 
       {/* View Modal */}
-      {viewUser && (
-        <div className="modalOverlay" onClick={() => setViewUser(null)}>
-          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
-            <div className="modalHeader">
-              <h2 className="modalTitle">VIEW USER</h2>
-              <button className="modalCloseBtn" onClick={() => setViewUser(null)} type="button">✕</button>
-            </div>
-            <div className="modalBody">
-              <div className="kvGrid">
-                <div className="kv"><span>Username</span><b>{viewUser.username}</b></div>
-                <div className="kv"><span>Email</span><b>{viewUser.email}</b></div>
-                <div className="kv"><span>Role</span><RolePill role={viewUser.role as UserRole} /></div>
-                <div className="kv"><span>Organization</span><b>{orgById.get(viewUser.organization_id)?.name ?? "—"}</b></div>
-                <div className="kv"><span>Status</span><b>{viewUser.status}</b></div>
-                <div className="kv"><span>Created</span><b>{new Date(viewUser.createdAt).toLocaleString()}</b></div>
+      {viewUser && (() => {
+        const userPerms = ROLE_PERMISSIONS[viewUser.role as UserRole];
+        const PERM_GROUPS: { label: string; icon: string; color: string; bg: string; border: string; keys: (keyof typeof userPerms)[] }[] = [
+          {
+            label: "Campaigns",
+            icon: "bi-flag",
+            color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe",
+            keys: ["canViewCampaigns","canCreateCampaign","canEditCampaign","canDeleteCampaign","canOverrideSchedules","canEmergencyBroadcast"],
+          },
+          {
+            label: "Screens",
+            icon: "bi-laptop",
+            color: "#0f766e", bg: "#f0fdfa", border: "#99f6e4",
+            keys: ["canViewScreens","canCreateScreen","canEditScreen","canDeleteScreen","canDeactivateScreen","canPairScreen","canAssignPlaylistToScreen"],
+          },
+          {
+            label: "Contents",
+            icon: "bi-file-earmark",
+            color: "#7c3aed", bg: "#faf5ff", border: "#ddd6fe",
+            keys: ["canViewContents","canUploadContent","canEditContent","canDeleteContent"],
+          },
+          {
+            label: "Playlists",
+            icon: "bi-collection-play",
+            color: "#b45309", bg: "#fffbeb", border: "#fde68a",
+            keys: ["canViewPlaylists","canCreatePlaylist","canEditPlaylist","canDeletePlaylist","canAssignContent"],
+          },
+          {
+            label: "Layouts",
+            icon: "bi-grid-1x2",
+            color: "#be185d", bg: "#fdf2f8", border: "#fbcfe8",
+            keys: ["canViewLayouts","canCreateLayout","canEditLayout","canDeleteLayout"],
+          },
+          {
+            label: "Accounts & Users",
+            icon: "bi-person-rolodex",
+            color: "#1e3a5f", bg: "#f0f4ff", border: "#c7d7f9",
+            keys: ["canViewAccounts","canViewManageUsers","canViewManageOrganizations","canViewManageLocations","canManageUsers","canManageOrganizations","canManageLocations","canAssignRoles"],
+          },
+          {
+            label: "System",
+            icon: "bi-gear",
+            color: "#374151", bg: "#f9fafb", border: "#e5e7eb",
+            keys: ["canViewReports","canViewLogs","canModifySystemSettings","canViewPlayer"],
+          },
+        ];
+
+        return (
+          <div className="modalOverlay" onClick={() => setViewUser(null)}>
+            <div
+              className="modalCard"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: "560px", width: "90vw", maxHeight: "88vh", display: "flex", flexDirection: "column" }}
+            >
+              {/* Header */}
+              <div className="modalHeader">
+                <h2 className="modalTitle">VIEW USER</h2>
+                <button className="modalCloseBtn" onClick={() => setViewUser(null)} type="button">✕</button>
               </div>
 
-              {/* Permission summary for the viewed user */}
-              <div style={{ marginTop: "16px" }}>
-                <div style={{ fontWeight: 700, fontSize: "13px", marginBottom: "8px", color: "#374151" }}>
-                  Permissions for this role:
+              <div style={{ overflowY: "auto", padding: "20px" }}>
+                {/* User info card */}
+                <div style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
+                  padding: "16px 18px",
+                  marginBottom: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}>
+                  <div style={{
+                    width: "48px", height: "48px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontWeight: 800, fontSize: "18px", flexShrink: 0,
+                  }}>
+                    {viewUser.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: "16px", color: "#111827" }}>{viewUser.username}</div>
+                    <div style={{ fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>{viewUser.email}</div>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                      <RolePill role={viewUser.role as UserRole} />
+                      <span style={{
+                        background: viewUser.status === "active" ? "#dcfce7" : "#fee2e2",
+                        color: viewUser.status === "active" ? "#166534" : "#991b1b",
+                        padding: "2px 10px", borderRadius: "999px",
+                        fontSize: "11px", fontWeight: 600,
+                      }}>
+                        {viewUser.status === "active" ? "● Active" : "● Inactive"}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", fontSize: "11px", color: "#9ca3af", flexShrink: 0 }}>
+                    <div>Organization</div>
+                    <div style={{ fontWeight: 600, color: "#374151", marginTop: "2px" }}>
+                      {orgById.get(viewUser.organization_id)?.name ?? "—"}
+                    </div>
+                    <div style={{ marginTop: "6px" }}>Joined</div>
+                    <div style={{ fontWeight: 600, color: "#374151", marginTop: "2px" }}>
+                      {new Date(viewUser.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                  {(Object.entries(ROLE_LABELS) as [UserRole, string][]).find(
-                    ([r]) => r === viewUser.role
-                  ) && (
-                    Object.entries(ROLE_PERMISSIONS[viewUser.role as UserRole])
-                      .filter(([, v]) => v)
-                      .map(([k]) => (
-                        <span key={k} style={{
-                          background: "#f0fdf4",
-                          color: "#166534",
-                          border: "1px solid #bbf7d0",
-                          padding: "2px 8px",
-                          borderRadius: "999px",
-                          fontSize: "11px",
-                        }}>
-                          {k.replace(/^can/, "").replace(/([A-Z])/g, " $1").trim()}
-                        </span>
-                      ))
-                  )}
-                </div>
+
+                {/* Permissions card */}
+                <PermissionsCard userPerms={userPerms} groups={PERM_GROUPS} />
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Edit Modal */}
       {editUser && editDraft && canEdit && (
@@ -590,6 +821,7 @@ useEffect(() => {
       )}
 
       
+      {/* ── Super Admin Delete Modal ──────────────────────────────────────────── */}
       {deleteTarget && (
         <div className="modalOverlay" onClick={closeDeleteModal}>
           <div className="modalCard" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "420px" }}>
@@ -733,11 +965,10 @@ useEffect(() => {
           </div>
         </div>
       )}
-    </div>  
-
+    </div>
   );
 };
 
-      
+
 
 export default ManageUsers;

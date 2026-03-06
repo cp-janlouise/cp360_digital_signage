@@ -3,6 +3,7 @@ import "/src/frontend/styles/layouts.css";
 import TopBar from "./TopBar";
 import Ticker from "./Ticker";
 import Stage from "./Stage";
+import { usePermissions } from "../security/permissionContext";
 
 /** Keep types compatible with Contents.tsx */
 export type MediaType = "image" | "video" | "website" | "music";
@@ -126,6 +127,11 @@ const DEFAULT_FRAMES: Record<SlotId, { x: number; y: number; w: number; h: numbe
 const RESERVED_NAME = "untitled layout";
 
 const Layouts: React.FC<Props> = ({ mediaLibrary, onUseLayout, onNavigateHome }) => {
+  const { can } = usePermissions();
+  const canCreate = can("canCreateLayout");
+  const canEdit   = can("canEditLayout");
+  const canDelete = can("canDeleteLayout");
+
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -281,6 +287,7 @@ const removeSlot = () => {
   };
 
   const removeLayout = (id: string) => {
+    if (!canDelete) return;
     if (!confirm("Delete this layout?")) return;
     setLayouts((prev) => prev.filter((l) => l.id !== id));
     if (selectedId === id) setSelectedId(null);
@@ -485,9 +492,11 @@ const removeSlot = () => {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search layouts..."
           />
-          <button className="btnPrimary" onClick={openCreate}>
-            + ADD A LAYOUT
-          </button>
+          {canCreate && (
+            <button className="btnPrimary" onClick={openCreate}>
+              + ADD A LAYOUT
+            </button>
+          )}
         </div>
       </div>
 
@@ -542,12 +551,16 @@ const removeSlot = () => {
                 <button className="btnPrimary" onClick={() => {onUseLayout(selected); setActiveLayout(selected);}}>
                   USE THIS LAYOUT
                 </button>
-                <button className="btnGhost" onClick={() => openEdit(selected)}>
-                  EDIT
-                </button>
-                <button className="btnDanger" onClick={() => removeLayout(selected.id)}>
-                  DELETE
-                </button>
+                {canEdit && (
+                  <button className="btnGhost" onClick={() => openEdit(selected)}>
+                    EDIT
+                  </button>
+                )}
+                {canDelete && (
+                  <button className="btnDanger" onClick={() => removeLayout(selected.id)}>
+                    DELETE
+                  </button>
+                )}
               </div>
             </>
           )}

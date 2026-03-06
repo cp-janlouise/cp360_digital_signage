@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "/src/frontend/styles/playlists.css";
+import { usePermissions } from "../security/permissionContext";
 
 // ── Shared types (keep in sync with Layouts.tsx) ──────────────────────────────
 export type SlotId = "hero" | "rightTop" | "rightBottom";
@@ -73,6 +74,21 @@ function fmtDur(s: number) {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
+  const { can } = usePermissions();
+  const canPreview = can("canPreviewPlaylist");
+  const canCreate  = can("canCreatePlaylist");
+  const canEdit    = can("canEditPlaylist");
+  const canDelete  = can("canDeletePlaylist");
+  const canAssign  = can("canAssignContent");
+  const canTest    = can("canTestPlayback");
+
+  // Preview / test state
+  const [showPreview, setShowPreview]       = useState(false);
+  const [previewSlot, setPreviewSlot]       = useState<SlotId>("hero");
+  const [previewIdx, setPreviewIdx]         = useState(0);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [layouts,   setLayouts]   = useState<LayoutRef[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -230,6 +246,51 @@ const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
   const playlistTotalDur = (pl: Playlist) =>
     ALL_SLOTS.reduce((n, s) => n + totalSecs(pl.slots[s] ?? []), 0);
 
+  // ── Preview helpers ──────────────────────────────────────────────────────────
+  const openPreview = (pl: Playlist) => {
+    setPreviewSlot("hero");
+    setPreviewIdx(0);
+    setPreviewPlaying(false);
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    setShowPreview(true);
+  };
+
+  const stopPreview = () => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    setPreviewPlaying(false);
+    setShowPreview(false);
+  };
+
+  const previewEntries = (pl: Playlist | null) =>
+    pl ? (pl.slots[previewSlot] ?? []) : [];
+
+  const advancePreview = (pl: Playlist, dir: 1 | -1) => {
+    const entries = previewEntries(pl);
+    if (!entries.length) return;
+    setPreviewIdx(i => (i + dir + entries.length) % entries.length);
+  };
+
+  const toggleAutoPlay = (pl: Playlist) => {
+    if (previewPlaying) {
+      if (previewTimer.current) clearTimeout(previewTimer.current);
+      setPreviewPlaying(false);
+      return;
+    }
+    setPreviewPlaying(true);
+    const tick = (idx: number) => {
+      const entries = previewEntries(pl);
+      if (!entries.length) return;
+      const dur = (entries[idx]?.duration ?? 5) * 1000;
+      previewTimer.current = setTimeout(() => {
+        const next = (idx + 1) % entries.length;
+        setPreviewIdx(next);
+        tick(next);
+      }, dur);
+    };
+    tick(previewIdx);
+  };
+
+
   // ── Render ───────────────────────────────────────────────────────────────────
   const slotsForLayout = selectedLayout?.slotOrder ?? ["hero"];
 
@@ -242,7 +303,7 @@ const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
         <div className="topActions">
           <input className="searchInput" placeholder="Search playlists…" value={search}
             onChange={e => setSearch(e.target.value)} />
-          <button className="addCampaignBtn" onClick={openCreate}>+ NEW PLAYLIST</button>
+          {canCreate && <button className="addCampaignBtn" onClick={openCreate}>+ NEW PLAYLIST</button>}
         </div>
       </div>
 
@@ -280,8 +341,8 @@ const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
                       </span>
                     </div>
                     <div className="plItemActions">
-                      <button className="btnIcon" title="Rename" onClick={e => { e.stopPropagation(); openRename(pl); }}>✎</button>
-                      <button className="btnIcon btnIconDanger" title="Delete" onClick={e => { e.stopPropagation(); deletePlaylist(pl.id); }}>✕</button>
+                      {canEdit && <button className="btnIcon" title="Rename" onClick={e => { e.stopPropagation(); openRename(pl); }}>✎</button>}
+                      {canDelete && <button className="btnIcon btnIconDanger" title="Delete" onClick={e => { e.stopPropagation(); deletePlaylist(pl.id); }}>✕</button>}
                     </div>
                   </li>
                 );
@@ -304,18 +365,31 @@ const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
                     <span className="plLayoutBadge">
                       Layout: {selectedLayout ? selectedLayout.name : <em style={{ color: "#f87171" }}>deleted — please re-assign</em>}
                     </span>
-                    <button className="btnGhost" style={{ fontSize: 12, padding: "2px 10px" }}
+                    {canEdit && <button className="btnGhost" style={{ fontSize: 12, padding: "2px 10px" }}
                       onClick={() => openRename(selected)}>
                       Change Layout
-                    </button>
+                    </button>}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <button className="addCampaignBtn" onClick={() => {
-                    setPickerSearch(""); setPickerTab("all"); setShowPicker(true);
-                  }}>
-                    + ADD MEDIA
-                  </button>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                    {canPreview && (
+                      <button
+                        className="btnGhost"
+                        style={{ fontSize: 12, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, color: "#6366f1", borderColor: "#c7d2fe" }}
+                        onClick={() => openPreview(selected)}
+                        title="Preview this playlist"
+                      >
+                        <i className="bi bi-play-circle" style={{ fontSize: 14 }} />
+                        Preview
+                      </button>
+                    )}
+                    {canAssign && <button className="addCampaignBtn" onClick={() => {
+                      setPickerSearch(""); setPickerTab("all"); setShowPicker(true);
+                    }}>
+                      + ADD MEDIA
+                    </button>}
+                  </div>
                   <div className="plDetailMeta" style={{ marginTop: 4 }}>
                     {playlistTotalItems(selected)} items · {fmtDur(playlistTotalDur(selected))} total
                   </div>
@@ -388,15 +462,19 @@ const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
                             onChange={e => setDuration(entry.entryId, Math.max(1, Number(e.target.value)))} />
                         </div>
 
-                        <div className="plEntryOrder">
-                          <button className="btnIcon" title="Move up" disabled={i === 0}
-                            onClick={() => moveEntry(i, i - 1)}>▲</button>
-                          <button className="btnIcon" title="Move down" disabled={i === activeEntries.length - 1}
-                            onClick={() => moveEntry(i, i + 1)}>▼</button>
-                        </div>
+                        {canEdit && (
+                          <div className="plEntryOrder">
+                            <button className="btnIcon" title="Move up" disabled={i === 0}
+                              onClick={() => moveEntry(i, i - 1)}>▲</button>
+                            <button className="btnIcon" title="Move down" disabled={i === activeEntries.length - 1}
+                              onClick={() => moveEntry(i, i + 1)}>▼</button>
+                          </div>
+                        )}
 
-                        <button className="btnIcon btnIconDanger" title="Remove"
-                          onClick={() => removeEntry(entry.entryId)}>✕</button>
+                        {canAssign && (
+                          <button className="btnIcon btnIconDanger" title="Remove"
+                            onClick={() => removeEntry(entry.entryId)}>✕</button>
+                        )}
                       </div>
                     );
                   })}
@@ -496,6 +574,187 @@ const Playlists: React.FC<Props> = ({ mediaLibrary, onNavigateHome }) => {
           </div>
         </div>
       )}
+      {/* ── Preview Modal ── */}
+      {showPreview && canPreview && selected && (() => {
+        const entries = previewEntries(selected);
+        const entry   = entries[previewIdx];
+        const media   = entry ? mediaLibrary.find(m => m.id === entry.mediaId) : null;
+        const slotsAvailable = (selectedLayout?.slotOrder ?? ["hero"]) as SlotId[];
+        return (
+          <div
+            style={{
+              position: "fixed", inset: 0, zIndex: 1000,
+              background: "rgba(0,0,0,0.75)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            onClick={stopPreview}
+          >
+            <div
+              style={{
+                background: "#1e293b", borderRadius: 16, padding: "24px 28px",
+                width: "min(680px, 95vw)", maxHeight: "90vh", overflowY: "auto",
+                boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+                display: "flex", flexDirection: "column", gap: 16,
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <h2 style={{ margin: 0, color: "#f1f5f9", fontSize: 18, fontWeight: 700 }}>
+                    <i className="bi bi-play-circle-fill" style={{ color: "#6366f1", marginRight: 8 }} />
+                    Preview: {selected.name}
+                  </h2>
+                  <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
+                    Simulated playback — not live on screen
+                  </div>
+                </div>
+                <button
+                  onClick={stopPreview}
+                  style={{ background: "rgba(255,255,255,0.08)", border: "none", color: "#94a3b8", cursor: "pointer", width: 32, height: 32, borderRadius: 8, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >✕</button>
+              </div>
+
+              {/* Slot selector */}
+              {slotsAvailable.length > 1 && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  {slotsAvailable.map(slot => (
+                    <button
+                      key={slot}
+                      onClick={() => { setPreviewSlot(slot); setPreviewIdx(0); }}
+                      style={{
+                        padding: "4px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                        background: previewSlot === slot ? "#6366f1" : "rgba(255,255,255,0.08)",
+                        color: previewSlot === slot ? "#fff" : "#94a3b8",
+                      }}
+                    >
+                      {SLOT_LABELS[slot]}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Media preview area */}
+              <div style={{
+                background: "#0f172a", borderRadius: 12, minHeight: 280,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                overflow: "hidden", position: "relative",
+              }}>
+                {!entries.length ? (
+                  <div style={{ color: "#475569", fontSize: 14, textAlign: "center", padding: 24 }}>
+                    <i className="bi bi-collection-play" style={{ fontSize: 32, display: "block", marginBottom: 8 }} />
+                    No media in this slot
+                  </div>
+                ) : !media ? (
+                  <div style={{ color: "#ef4444", fontSize: 13 }}>Media not found in library</div>
+                ) : (
+                  <>
+                    {media.type === "image"   && <img src={media.src} alt={media.title} style={{ maxWidth: "100%", maxHeight: 340, borderRadius: 8, objectFit: "contain" }} />}
+                    {media.type === "video"   && <video key={media.src} src={media.src} controls autoPlay style={{ maxWidth: "100%", maxHeight: 340, borderRadius: 8 }} />}
+                    {media.type === "music"   && (
+                      <div style={{ textAlign: "center", color: "#e2e8f0" }}>
+                        <i className="bi bi-music-note-beamed" style={{ fontSize: 48, color: "#818cf8", display: "block", marginBottom: 12 }} />
+                        <div style={{ fontWeight: 600 }}>{media.title}</div>
+                        <audio src={media.src} controls autoPlay style={{ marginTop: 12 }} />
+                      </div>
+                    )}
+                    {media.type === "website" && (
+                      <iframe src={media.src} title={media.title} style={{ width: "100%", height: 320, border: "none", borderRadius: 8 }} sandbox="allow-scripts allow-same-origin" />
+                    )}
+
+                    {/* Entry index badge */}
+                    <div style={{
+                      position: "absolute", top: 10, right: 10,
+                      background: "rgba(0,0,0,0.6)", color: "#e2e8f0",
+                      padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600,
+                    }}>
+                      {previewIdx + 1} / {entries.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Media info */}
+              {media && (
+                <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#cbd5e1" }}>
+                  <strong style={{ color: "#f1f5f9" }}>{media.title}</strong>
+                  <span style={{ margin: "0 8px", color: "#475569" }}>·</span>
+                  {media.type.toUpperCase()}
+                  {entry && (
+                    <>
+                      <span style={{ margin: "0 8px", color: "#475569" }}>·</span>
+                      <i className="bi bi-clock" style={{ marginRight: 4 }} />
+                      {entry.duration}s
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Controls */}
+              {canTest && entries.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                  <button
+                    onClick={() => advancePreview(selected, -1)}
+                    style={{ background: "rgba(255,255,255,0.08)", border: "none", color: "#e2e8f0", cursor: "pointer", width: 40, height: 40, borderRadius: 10, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    title="Previous"
+                  >
+                    <i className="bi bi-skip-start-fill" />
+                  </button>
+
+                  <button
+                    onClick={() => toggleAutoPlay(selected)}
+                    style={{
+                      background: previewPlaying ? "#dc2626" : "#6366f1",
+                      border: "none", color: "#fff", cursor: "pointer",
+                      padding: "8px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700,
+                      display: "flex", alignItems: "center", gap: 8,
+                    }}
+                    title={previewPlaying ? "Stop auto-advance" : "Auto-advance by duration"}
+                  >
+                    <i className={`bi ${previewPlaying ? "bi-stop-fill" : "bi-play-fill"}`} />
+                    {previewPlaying ? "Stop" : "Auto Play"}
+                  </button>
+
+                  <button
+                    onClick={() => advancePreview(selected, 1)}
+                    style={{ background: "rgba(255,255,255,0.08)", border: "none", color: "#e2e8f0", cursor: "pointer", width: 40, height: 40, borderRadius: 10, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    title="Next"
+                  >
+                    <i className="bi bi-skip-end-fill" />
+                  </button>
+                </div>
+              )}
+
+              {/* All entries strip */}
+              {entries.length > 1 && (
+                <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+                  {entries.map((e, i) => {
+                    const m = mediaLibrary.find(x => x.id === e.mediaId);
+                    return (
+                      <button
+                        key={e.entryId}
+                        onClick={() => setPreviewIdx(i)}
+                        style={{
+                          flexShrink: 0, width: 64, height: 48, borderRadius: 6, overflow: "hidden",
+                          border: i === previewIdx ? "2px solid #6366f1" : "2px solid transparent",
+                          background: "#0f172a", cursor: "pointer", padding: 0, position: "relative",
+                        }}
+                        title={m?.title ?? "Unknown"}
+                      >
+                        {m?.type === "image"   && <img src={m.src} alt={m.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                        {m?.type === "video"   && <video src={m.src} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                        {m?.type === "music"   && <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#818cf8", fontSize: 18 }}><i className="bi bi-music-note" /></div>}
+                        {m?.type === "website" && <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 10, textAlign: "center", padding: 2 }}>🌐</div>}
+                        <div style={{ position: "absolute", bottom: 0, right: 0, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 9, padding: "1px 4px", borderRadius: "4px 0 0 0" }}>{e.duration}s</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

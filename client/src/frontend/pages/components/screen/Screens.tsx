@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { usePermissions } from "../security/permissionContext";
 
 export type Screen = {
   id: string;
@@ -51,6 +52,13 @@ function statusLabel(s: Screen) {
 }
 
 const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
+  const { can } = usePermissions();
+  const canCreate        = can("canCreateScreen");
+  const canEdit          = can("canEditScreen");
+  const canDelete        = can("canDeleteScreen");
+  const canPair          = can("canPairScreen");
+  const canAssignCampaign = can("canAssignPlaylistToScreen");
+
   const [screens, setScreens]       = useState<Screen[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch]         = useState("");
@@ -112,6 +120,7 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
   };
 
   const deleteScreen = (id: string) => {
+    if (!canDelete) return;
     if (!confirm("Delete this screen?")) return;
     setScreens(prev => { const next = prev.filter(s => s.id !== id); if (selectedId === id) setSelectedId(next[0]?.id ?? null); return next; });
   };
@@ -130,7 +139,9 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
         <h1 className="pageTitle">Screens</h1>
         <div className="topActions">
           <input className="searchInput" placeholder="Search screens…" value={search} onChange={e => setSearch(e.target.value)} />
-          <button className="addCampaignBtn" onClick={openCreate}>+ REGISTER SCREEN</button>
+          {canCreate && (
+            <button className="addCampaignBtn" onClick={openCreate}>+ REGISTER SCREEN</button>
+          )}
         </div>
       </div>
 
@@ -152,8 +163,12 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
                     <span className="plItemMeta">{statusLabel(s)}</span>
                   </div>
                   <div className="plItemActions">
-                    <button className="btnIcon" onClick={e => { e.stopPropagation(); openEdit(s); }}>✎</button>
-                    <button className="btnIcon btnIconDanger" onClick={e => { e.stopPropagation(); deleteScreen(s.id); }}>✕</button>
+                    {canEdit && (
+                      <button className="btnIcon" onClick={e => { e.stopPropagation(); openEdit(s); }}>✎</button>
+                    )}
+                    {canDelete && (
+                      <button className="btnIcon btnIconDanger" onClick={e => { e.stopPropagation(); deleteScreen(s.id); }}>✕</button>
+                    )}
                   </div>
                 </li>
               ))}
@@ -175,7 +190,9 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
                     {selected.lastSeen && <span style={{ fontSize:12, color:"#d1d5db" }}>· last seen {new Date(selected.lastSeen).toLocaleTimeString()}</span>}
                   </div>
                 </div>
-                <button className="btnPrimary" onClick={() => openEdit(selected)}>Edit</button>
+                {canEdit && (
+                  <button className="btnPrimary" onClick={() => openEdit(selected)}>Edit</button>
+                )}
               </div>
 
               <div className="cmpDetailBody">
@@ -199,12 +216,14 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
                             <div className="scrPairingCountdown">Expires in {fmtCountdown(secsLeft(selected.pairingCodeExpiry))}</div>
                           </>
                         ) : (
-                          <button className="btnPrimary" style={{ marginTop:12 }} onClick={() => regenerateCode(selected.id)}>Generate New Code</button>
+                          canPair && (
+                            <button className="btnPrimary" style={{ marginTop:12 }} onClick={() => regenerateCode(selected.id)}>Generate New Code</button>
+                          )
                         )}
                       </>
                     )}
 
-                    {selected.status === "online" && (
+                    {selected.status === "online" && canPair && (
                       <button className="btnGhost" style={{ fontSize:12, marginTop:10 }} onClick={() => regenerateCode(selected.id)}>Re-pair this screen</button>
                     )}
                   </div>
@@ -231,9 +250,11 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
                 <div className="cmpSection">
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                     <div className="cmpSectionTitle" style={{ marginBottom:0 }}>Assigned Campaigns</div>
-                    <button className="addCampaignBtn" style={{ fontSize:12, padding:"4px 14px" }} onClick={() => setShowCmpPicker(true)} disabled={unassignedCampaigns.length === 0}>
-                      + Assign Campaign
-                    </button>
+                    {canAssignCampaign && (
+                      <button className="addCampaignBtn" style={{ fontSize:12, padding:"4px 14px" }} onClick={() => setShowCmpPicker(true)} disabled={unassignedCampaigns.length === 0}>
+                        + Assign Campaign
+                      </button>
+                    )}
                   </div>
                   {assignedCampaigns.length === 0 ? (
                     <div style={{ color:"#9ca3af", fontSize:13, padding:"12px 0" }}>No campaigns assigned. The player will show a "No content" screen.</div>
@@ -245,7 +266,9 @@ const Screens: React.FC<Props> = ({ campaigns, onNavigateHome }) => {
                             <div className="plItemName">{c.name}</div>
                             <div className="plItemMeta">{c.playlistName && <>{c.playlistName} · </>}{c.startDate} → {c.endDate}</div>
                           </div>
-                          <button className="btnIcon btnIconDanger" onClick={() => unassignCampaign(c.id)}>✕</button>
+                          {canAssignCampaign && (
+                            <button className="btnIcon btnIconDanger" onClick={() => unassignCampaign(c.id)}>✕</button>
+                          )}
                         </div>
                       ))}
                     </div>
