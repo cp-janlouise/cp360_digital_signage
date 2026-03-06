@@ -265,12 +265,18 @@ const PermissionsCard: React.FC<{
 // ── ManageUsers ───────────────────────────────────────────────────────────────
 const ManageUsers: React.FC<Props> = ({ onBack }) => {
   const currentUserId = "superadmin-1";
-  const { can } = usePermissions();
+  const { can, role: currentRole } = usePermissions();
 
   // Permission shortcuts for this view
   const canCreate = can("canManageUsers");
   const canEdit   = can("canManageUsers");
   const canDelete = can("canManageUsers");
+
+  // Roles the current user is allowed to see
+  // Admin can only see contentManager and viewer — not superAdmin or other admins
+  const VISIBLE_ROLES: UserRole[] = currentRole === "admin"
+    ? ["contentManager", "viewer"]
+    : ["superAdmin", "admin", "contentManager", "viewer"];
 
   const [users, setUsers]     = useState<UserItem[]>(() => getUsers());
   const [orgs, setOrgs]       = useState<OrganizationItem[]>(() => getOrganizations());
@@ -388,11 +394,12 @@ useEffect(() => {
     return users.filter((u) => {
       const orgName = orgById.get(u.organization_id)?.name ?? "";
       const matchesSearch = !q || [u.username, u.email, u.role, orgName, u.status].some((s) => s.toLowerCase().includes(q));
-      const matchesRole   = roleFilter === "all" || u.role === roleFilter;
-      const matchesOrg    = orgFilter  === "all" || u.organization_id === orgFilter;
-      return matchesSearch && matchesRole && matchesOrg;
+      const matchesRole    = roleFilter === "all" || u.role === roleFilter;
+      const matchesOrg     = orgFilter  === "all" || u.organization_id === orgFilter;
+      const matchesVisible = VISIBLE_ROLES.includes(u.role as UserRole);
+      return matchesSearch && matchesRole && matchesOrg && matchesVisible;
     });
-  }, [users, userSearch, orgById, roleFilter, orgFilter]);
+  }, [users, userSearch, orgById, roleFilter, orgFilter, VISIBLE_ROLES]);
 
   const activeFiltersCount = (roleFilter !== "all" ? 1 : 0) + (orgFilter !== "all" ? 1 : 0);
   const isProtectedRow = (u: UserItem) => u.id === currentUserId;
@@ -454,8 +461,8 @@ useEffect(() => {
             <span className="filterLabel">Role</span>
             <select className="filterSelect" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as "all" | UserRole)}>
               <option value="all">All</option>
-              {(Object.keys(ROLE_LABELS) as UserRole[]).map((r) => (
-                <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+              {(Object.keys(ROLE_LABELS) as UserRole[]).filter((r) => VISIBLE_ROLES.includes(r as UserRole)).map((r) => (
+                <option key={r} value={r}>{ROLE_LABELS[r as UserRole]}</option>
               ))}
             </select>
           </div>
@@ -587,8 +594,8 @@ useEffect(() => {
                 <SelectInput id="role" value={newUser.role}
                   onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value as UserRole }))}
                   placeholder="SELECT ROLE">
-                  {(Object.keys(ROLE_LABELS) as UserRole[]).map((r) => (
-                    <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                  {(Object.keys(ROLE_LABELS) as UserRole[]).filter((r) => VISIBLE_ROLES.includes(r as UserRole)).map((r) => (
+                    <option key={r} value={r}>{ROLE_LABELS[r as UserRole]}</option>
                   ))}
                 </SelectInput>
               </div>
@@ -772,8 +779,8 @@ useEffect(() => {
               <div className="inputGroupRole">
                 <select id="editRole" value={editDraft.role}
                   onChange={(e) => setEditDraft((p) => p ? { ...p, role: e.target.value as UserRole } : p)} required>
-                  {(Object.keys(ROLE_LABELS) as UserRole[]).map((r) => (
-                    <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                  {(Object.keys(ROLE_LABELS) as UserRole[]).filter((r) => VISIBLE_ROLES.includes(r as UserRole)).map((r) => (
+                    <option key={r} value={r}>{ROLE_LABELS[r as UserRole]}</option>
                   ))}
                 </select>
               </div>
@@ -972,6 +979,3 @@ useEffect(() => {
 
 
 export default ManageUsers;
-
-
-

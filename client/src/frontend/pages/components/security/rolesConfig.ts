@@ -169,7 +169,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission> = {
     canDeleteContent: false,
     canViewLayouts:  true,
     canCreateLayout: false,
-    canEditLayout:   false,
+    canEditLayout:   true,
     canDeleteLayout: false,
     canViewAccounts:            true,
     canViewManageUsers:         true,
